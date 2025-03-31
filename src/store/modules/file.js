@@ -16,7 +16,7 @@ export default {
                         'Authorization': `Bearer ${data.accessToken}`
                     }
                 });
-                return response.data.fileId;
+                return response.data;
             } catch(error) {
                 return error.response.status;
             }

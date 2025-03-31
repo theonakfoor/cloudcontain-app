@@ -139,8 +139,8 @@
             <!-- BEGIN Home Tab -->
             <div v-if="this.tab == 0">
 
-                <h2>Welcome back, {{ this.user.given_name }}.</h2>
-                <p class="mb-5">What do you want to work on this {{ (this.time < 12) ? "morning" : (this.time >= 12 && this.time < 18) ? "afternoon" : "evening" }}?</p>
+                <h2 class="m-0"><strong>Welcome back, {{ this.user.given_name }}.</strong></h2>
+                <p class="m-0 mb-5">What do you want to work on this {{ (this.time < 12) ? "morning" : (this.time >= 12 && this.time < 18) ? "afternoon" : "evening" }}?</p>
                 
                 <div style="width: 100%;" class="mb-5">
                     <div class="mb-2" style="display: flex; width: 100%; justify-content: space-between;">

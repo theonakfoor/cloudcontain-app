@@ -33,12 +33,12 @@
     <!-- END Create File Dialog -->
 
     <!-- BEGIN Progress Indicator -->
-    <v-progress-linear color="#379af5" height="3" :indeterminate="this.loading"></v-progress-linear>
+    <v-progress-linear color="#379af5" height="3" :indeterminate="this.loading || this.pageLoading"></v-progress-linear>
     <!-- END Progress Indicator -->
 
     <!-- BEGIN Status Overlay -->
-    <div style="width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;" v-if="[null, 401, 404, 500].includes(this.envInfo)">
-      <div style="text-align: center;" v-if="this.envInfo == null">
+    <div style="width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;" v-if="[null, 401, 404, 500].includes(this.envInfo) || this.pageLoading">
+      <div style="text-align: center;" v-if="this.envInfo == null || this.pageLoading">
         <v-progress-circular color="#379af5" :size="35" indeterminate></v-progress-circular>
         <p style="font-weight: 500; font-size: 20px;" class="mt-3 m-0">Loading container...{{  }}</p>
       </div>
@@ -59,24 +59,27 @@
     <!-- END Status Overlay -->
     
     <!-- BEGIN Nav Bar -->
-    <div class="env-bar" v-if="![null, 401, 404, 500].includes(this.envInfo)">
+    <div class="env-bar" v-if="![null, 401, 404, 500].includes(this.envInfo) && !this.pageLoading">
       <!-- BEGIN Logo -->
       <img src="../assets/images/cloudcontain.svg" width="150" class="my-auto" @click="this.home()" />
       <!-- END Logo -->
       <!-- BEGIN Environment Details -->
       <div style="display: flex; flex-direction: row;" class="my-auto">
         <div class="env-name">
-          <h4 style="margin: 0; font-weight: 400; outline: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 200px;">{{ this.envInfo.name }}</h4>
+          <h4 class="my-auto" style="margin: 0; font-weight: 400; outline: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 200px; font-size: 15px">{{ this.envInfo.name }}</h4>
           <v-icon icon="mdi-chevron-down" class="ms-1 my-auto" style="color: #bfbfbf"></v-icon>
         </div>
         <v-tooltip text="Open Hunter" location="bottom">
           <template v-slot:activator="{ props }">
-            <div class="env-logs ms-2 my-auto" v-bind="props"><v-icon class="mx-auto my-auto" icon="mdi-crosshairs-gps" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></div>
+            <button class="env-logs ms-2 my-auto" v-bind="props"><v-icon class="mx-auto my-auto" icon="mdi-crosshairs-gps" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></button>
           </template>
         </v-tooltip>
         <v-tooltip text="Execute Container" location="bottom">
           <template v-slot:activator="{ props }">
-            <div class="env-execute-small ms-2 my-auto" v-bind="props"><v-icon class="mx-auto my-auto" icon="mdi-play-speed" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></div>
+            <button class="env-execute-small ms-2 my-auto" v-bind="props" :disabled="this.loading || this.hasActiveJob()" @click="this.execute()">
+              <v-icon class="mx-auto my-auto" icon="mdi-play-speed" style="font-size: 24px; margin: 0; padding: 0;" v-if="!this.hasActiveJob()"></v-icon>
+              <v-progress-circular color="#00A550" width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto" v-if="this.hasActiveJob()"></v-progress-circular>
+            </button>
           </template>
         </v-tooltip>
       </div>
@@ -97,7 +100,7 @@
     <!-- END Nav Bar -->
 
     <!-- BEGIN Environment Content -->
-    <div class="env-content" v-show="![null, 401, 404, 500].includes(this.envInfo)">
+    <div class="env-content" v-show="![null, 401, 404, 500].includes(this.envInfo) && !this.pageLoading">
 
       <!-- BEGIN Editor -->
       <div class="env-editor" id="editor">
@@ -288,8 +291,8 @@
               <template v-for="file in this.currentDirectory.files">
                 <div class="env-sidebar-content-files-file mt-2" @click="(!this.loading) ? openFile(file.fileId) : null">
                   <div style="display: flex; flex-direction: row; justify-content: flex-start;">
-                    <v-icon class="my-auto me-1" icon="mdi-cube-outline" style="color: #379af5;"></v-icon>
-                    <p class="my-auto" style="font-size: 15px;">{{ file.name }}</p>
+                    <v-icon class="my-auto me-1" :icon="(this.envInfo.entryPoint == file.fileId) ? 'mdi-location-enter' : 'mdi-cube-outline'" style="color: #379af5;"></v-icon>
+                    <p class="my-auto" style="font-size: 15px;">{{ file.name }} <span v-if="this.envInfo.entryPoint == file.fileId" style="color: #379af5;" class="ms-1">(Entry Point)</span></p>
                   </div>
                   <p class="my-auto" style="color: #bfbfbf; font-size: 13px;">{{ this.moment(file.lastModified).format("MMM Do [at] h:mma") }} <v-icon class="env-sidebar-content-files-file-options my-auto" icon="mdi-dots-vertical"></v-icon></p>
                 </div>
@@ -309,15 +312,72 @@
 
           <!-- BEGIN Console Content -->
           <div class="env-sidebar-content-console pa-3" v-if="this.sidebarTab == 0">
-            
-            <div class="env-sidebar-content-console-output" v-if="this.consoleHistory.length > 0">
-              
-            </div>
 
-            <div v-if="this.consoleHistory.length == 0">
-              <p class="mb-2">The output history of this container will appear here when you execute your project.</p>
-              <button class="env-execute"><v-icon icon="mdi-play-speed" class="my-auto me-2"></v-icon>Execute Container</button>            
-            </div>
+            <button class="env-execute mb-3" :disabled="this.loading || this.hasActiveJob()" @click="this.execute()">
+              <v-icon icon="mdi-play-speed" class="my-auto me-2"></v-icon>
+              Execute Container
+            </button>   
+            
+            <p v-if="this.jobs.length == 0">The output history of this container will appear here when you execute your project.</p> 
+            
+            <template v-for="job in this.jobs">
+
+              <div class="env-sidebar-job mb-2 pa-2">
+
+                <v-progress-linear :class="{'node': (['STARTING_NODE', 'NODE_STARTED'].includes(job.status)), 'pending':(job.status == 'PENDING'), 'success': (['STARTED', 'CLONING', 'CONTAINERIZING', 'RUNNING', 'CLEANING'].includes(job.status)), 'completed': (job.status == 'COMPLETED'), 'failed': (job.status == 'FAILED' || job.status == 'BUILD_FAILED')}" height="3" class="mb-2" :indeterminate="!['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)" style="border-radius: 5px;"></v-progress-linear>
+               
+                <div class="mb-2" style="display: flex; width: 100%; padding: 5px 10px; justify-content: space-between; background: rgba(191, 191, 191, 0.25); border-radius: 5px;">
+                  <div class="my-auto">
+                    <p style="margin: 0; padding: 0; font-size: 14px;">Job <strong>&bull;&bull;&bull;{{ job.jobId.slice(-5) }}</strong></p>
+                    <p style="margin: 0; padding: 0; font-size: 12px; color: #999999; font-weight: 700;" v-if="['STARTING_NODE', 'NODE_STARTED', 'PENDING'].includes(job.status)">Queued {{ this.moment(job.queued).fromNow() }}</p>
+                    <p style="margin: 0; padding: 0; font-size: 12px; color: #999999; font-weight: 700;" v-if="['STARTED', 'CLONING', 'CONTAINERIZING', 'RUNNING', 'CLEANING'].includes(job.status)">Started {{ this.moment(job.started).fromNow() }}</p>
+                    <p style="margin: 0; padding: 0; font-size: 12px; color: #999999; font-weight: 700;" v-if="['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)">Finished {{ this.moment(job.ended).fromNow() }}</p>
+                  </div>
+                  <div style="display: flex; justify-content: start;">
+                    <div class="env-sidebar-job-status my-auto" v-if="false"></div>
+                    <div :class="{'spinner-grow':true, 'finished':(['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)), 'my-auto':true, 'node': (['STARTING_NODE', 'NODE_STARTED'].includes(job.status)), 'pending':(job.status == 'PENDING'), 'success': (['STARTED', 'CLONING', 'CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED'].includes(job.status)), 'failed': (job.status == 'FAILED' || job.status == 'BUILD_FAILED')}" role="status" style="width: 10px; height: 10px;"></div>
+                    <span class="my-auto ms-2" v-if="job.status == 'STARTING_NODE'">Provisioning node</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'NODE_STARTED'">Node provisioned</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'PENDING'">Job pending</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'STARTED'">Job started</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'CLONING'">Cloning files</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'CONTAINERIZING'">Containerizing</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'RUNNING'">Job running</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'CLEANING'">Cleaning up</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'COMPLETED'">Job completed</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'FAILED'">Job failed</span>
+                    <span class="my-auto ms-2" v-if="job.status == 'BUILD_FAILED'">Build failed</span>
+                  </div>
+                </div>
+
+                <div style="width: 100%; background: rgba(191, 191, 191, 0.25); border-radius: 5px; padding: 5px 10px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <p class="my-auto" style="margin: 0; padding: 0; font-size: 14px;">Output</p>
+                    <v-icon icon="mdi-chevron-up" class="my-auto"></v-icon>
+                  </div>
+
+                  <div v-if="!['CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)" style="width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; color: #999999;">
+                    Waiting for run to begin
+                  </div>
+
+                  <div v-if="['CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status) && job.output.length > 0" style="width: 100%; min-height: 200px; max-height: 500px !important; overflow-y: scroll !important;" :id="`job-output-${job.jobId}`">
+                    <template v-for="output in job.output">
+                      <div class="env-sidebar-job-output">
+                        <div class="me-3" style="align-self: flex-start; background: rgba(191, 191, 191, 0.5); font-size: 12px; padding: 1px 5px; border-radius: 5px; min-width: 85px; text-align: center;">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
+                        <p :class="{'my-auto': true, 'build-output': (output.build)}" style="margin: 0; font-size: 14px">{{ output.content }}</p>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+
+                <div class="mt-2" style="background: rgba(55, 154, 245, 0.2); color: #379af5; border: 1px solid #379af5; border-radius: 5px; padding: 5px 10px; font-size: 16px;" v-if="job.status == 'STARTING_NODE'">
+                  <div style="display: flex; justify-content: start; font-weight: 800;"><v-icon class="my-auto me-1" icon="mdi-alert-circle-outline"></v-icon> <p class="m-0 my-auto">Heads up</p></div> 
+                  <hr class="my-2">
+                  Job execution servers are provisioned on-demand. Cold start jobs may take up to 2 minutes to begin, but subsequent runs will be faster. We appreciate your patience.
+                </div>
+              </div>
+
+            </template>
 
           </div>
           <!-- END Console Content -->
@@ -351,7 +411,8 @@ export default {
   data() {
     const { logout, user, isAuthenticated } = useAuth0();
     return {
-      loading: true,
+      loading: false,
+      pageLoading: true,
       envInfo: null,
       sidebarTab: 0,
       currentDirectory: null,
@@ -365,7 +426,7 @@ export default {
       },
       tabs: [],
       activeTab: null,
-      consoleHistory: [],
+      jobs: [],
       logout: () => {
           logout();
       },
@@ -374,11 +435,17 @@ export default {
     }
   },
   async mounted() {
+    Pusher.logToConsole = true;
     this.envInfo = await this.$store.dispatch('container/getContainer', {
         containerId: this.$route.params.containerId,
         accessToken: await this.$auth0.getAccessTokenSilently()
     });
-    await this.loadDirectory("~");
+    if(![null, 401, 404, 500].includes(this.envInfo)) {
+      await this.loadJobs();
+      await this.loadDirectory("~");
+      this.initPusherConnection();
+    }
+    this.pageLoading = false;
   },
   methods: {
     openTab(fileId) {
@@ -399,6 +466,14 @@ export default {
       if(this.activeTab.fileId == fileId) {
         this.activeTab = this.tabs.length > 0 ? this.tabs[0] : null;
       }
+    },
+    async loadJobs() {
+      this.loading = true;
+      this.jobs = await this.$store.dispatch('job/listJobs', {
+          containerId: this.$route.params.containerId,
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      this.loading = false;
     },
     async loadDirectory(folderId) {
       this.loading = true;
@@ -427,12 +502,14 @@ export default {
     },
     async createFile() {
       this.loading = true;
-      await this.$store.dispatch('file/createFile', {
+      let response = await this.$store.dispatch('file/createFile', {
           name: this.createFileDialog.name,
           folderId: this.currentDirectory.folderId,
           containerId: this.$route.params.containerId,
           accessToken: await this.$auth0.getAccessTokenSilently()
       });
+      if(response.isEntry)
+        this.envInfo.entryPoint = response.fileId;
       await this.loadDirectory(this.currentDirectory.folderId);
       this.loading = false;
       this.createFileDialog.show = false;
@@ -483,6 +560,7 @@ export default {
     async saveFile(fileId, doc) {
       let tab = this.tabs.find(tab => tab.fileId == fileId);
       tab.saving = true;
+      this.loading = true;
       let response = await this.$store.dispatch('file/updateContent', {
           fileId: tab.fileId,
           containerId: this.$route.params.containerId,
@@ -493,6 +571,60 @@ export default {
       if(this.currentDirectory.files.some(file => file.fileId == fileId))
         this.currentDirectory.files.find(file => file.fileId == fileId).lastModified = response.lastModified;
       tab.saving = false;
+      this.loading = false;
+    },
+    async execute() {
+      this.loading = true;
+      let response = await this.$store.dispatch('job/executeJob', {
+          containerId: this.$route.params.containerId,
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      if(response.status == 201 && !this.jobs.some(job => job.jobId == response.data.jobId)) {
+        response.data.timeoutId = null;
+        this.jobs.splice(0, 0, response.data);
+      }
+      this.loading = false;
+      this.sidebarTab = 0;
+    },
+    initPusherConnection() {
+      let pusher = new Pusher('1b48cf0e39f77099506c', {
+        cluster: 'us3'
+      });
+      let channel = pusher.subscribe(this.envInfo.containerId);
+      channel.bind('job-status', (data) => {
+        let job = this.jobs.find(job => job.jobId == data.jobId);
+        if(job != null) {
+          job.status = data.status;
+          if(data.status == 'STARTED')
+            job.started = data.timestamp;
+          if(data.status == 'COMPLETED' || data.status == 'FAILED' || data.status == 'BUILD_FAILED')
+            job.ended = data.timestamp;
+        }
+      });
+      channel.bind('job-output', (data) => {
+        let job = this.jobs.find(job => job.jobId == data.jobId);
+        if (job != null) {
+          job.output.push({
+            content: data.content,
+            timestamp: data.timestamp,
+            build: data.build
+          });
+          clearTimeout(job.timeoutId);
+          job.timeoutId = setTimeout(() => {
+            const latestElement = document.getElementById(`job-output-${data.jobId}`).lastElementChild;
+            latestElement.scrollIntoView({ behavior: "smooth", block: "end"});
+          }, 75);
+        }
+      });
+      channel.bind('job-queued', (data) => {
+        if(!this.jobs.some(job => job.jobId == data.jobId)) {
+          data.timeoutId = null;
+          this.jobs.splice(0, 0, data);
+        }
+      });
+    },
+    hasActiveJob() {
+      return this.jobs.some(job => !['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status));
     },
     copyPath() {
       navigator.clipboard.writeText(`~/${this.currentDirectory.path.map(folder => (folder.name.includes(" ") ? `"${folder.name}"`: folder.name)).join("/")}${(this.currentDirectory.path.length > 0 ? "/" : "")}`);
