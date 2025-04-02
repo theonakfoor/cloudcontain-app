@@ -19,6 +19,18 @@ export default {
                 return error.response;
             }
         },
+        async getJobOutput({commit}, data) {
+            try {
+                let response = await Api().get(`containers/${data.containerId}/jobs/${data.jobId}/logs?offset=${data.offset}`, {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`
+                    }
+                });
+                return response;
+            } catch(error) {
+                return error.response;
+            }
+        },
         async listJobs({commit}, data) {
             let response = await Api().get(`containers/${data.containerId}/jobs`, {
                 headers: {

@@ -582,6 +582,20 @@
   background: rgba(191, 191, 191, 0.25);
 }
 
+.env-load-more {
+  display: flex;
+  flex-direction: row;
+  padding: 3px 10px;
+  border-radius: 5px;
+  outline: none;
+  font-family: 'DM Sans';
+  font-weight: 400;
+  background: rgba(191, 191, 191, 0.5);
+  color: black;
+  border: 2px solid transparent;
+  font-size: 14px;
+}
+
 .env-action {
   display: flex;
   flex-direction: row;

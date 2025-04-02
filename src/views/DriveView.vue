@@ -22,7 +22,7 @@
       max-width="500"
     >
         <div class="drive-dialog">
-            <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create Container</h2>
+            <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete Container</h2>
             <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.toDelete.name }}</strong>?</p>
             <div class="global-dialog-action mt-3">
                 <button class="global-dialog-action-cancel me-2" @click="this.deleteContainerDialog = false">Cancel</button>

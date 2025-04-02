@@ -264,7 +264,8 @@
               </v-tooltip>
             </div>
             <!-- END Sticky Header -->
-
+            
+            <!-- BEGIN Content Display -->
             <div class="pa-3 pt-0">
               <p style="color: #bfbfbf; margin: 0; font-weight: 700;">Directories</p>
 
@@ -306,6 +307,7 @@
                 <p style="color: #bfbfbf; border: 1px solid #d3d3d3; border-radius: 5px; padding: 5px 15px; width: auto;">Total directory size &mdash; <strong>1.3GB</strong></p>
               </div>
             </div>
+            <!-- END Content Display -->
 
           </div>
           <!-- END File Manager Content -->
@@ -313,26 +315,38 @@
           <!-- BEGIN Console Content -->
           <div class="env-sidebar-content-console pa-3" v-if="this.sidebarTab == 0">
 
+            <!-- BEGIN Execution Button -->
             <button class="env-execute mb-3" :disabled="this.loading || this.hasActiveJob()" @click="this.execute()">
               <v-icon icon="mdi-play-speed" class="my-auto me-2"></v-icon>
               Execute Container
             </button>   
+            <!-- END Execution Button -->
             
+            <!-- BEGIN No History Alert -->
             <p v-if="this.jobs.length == 0">The output history of this container will appear here when you execute your project.</p> 
-            
+            <!-- END No History Alert -->
+
+            <!-- BEGIN Jobs List -->
             <template v-for="job in this.jobs">
 
+              <!-- BEGIN Individual Job -->
               <div class="env-sidebar-job mb-2 pa-2">
 
+                <!-- BEGIN Job Progress Indicator -->
                 <v-progress-linear :class="{'node': (['STARTING_NODE', 'NODE_STARTED'].includes(job.status)), 'pending':(job.status == 'PENDING'), 'success': (['STARTED', 'CLONING', 'CONTAINERIZING', 'RUNNING', 'CLEANING'].includes(job.status)), 'completed': (job.status == 'COMPLETED'), 'failed': (job.status == 'FAILED' || job.status == 'BUILD_FAILED')}" height="3" class="mb-2" :indeterminate="!['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)" style="border-radius: 5px;"></v-progress-linear>
-               
+                <!-- END Job Progress Indicator -->
+
+                <!-- BEGIN Job Header -->
                 <div class="mb-2" style="display: flex; width: 100%; padding: 5px 10px; justify-content: space-between; background: rgba(191, 191, 191, 0.25); border-radius: 5px;">
+                  <!-- BEGIN Job Info -->
                   <div class="my-auto">
                     <p style="margin: 0; padding: 0; font-size: 14px;">Job <strong>&bull;&bull;&bull;{{ job.jobId.slice(-5) }}</strong></p>
                     <p style="margin: 0; padding: 0; font-size: 12px; color: #999999; font-weight: 700;" v-if="['STARTING_NODE', 'NODE_STARTED', 'PENDING'].includes(job.status)">Queued {{ this.moment(job.queued).fromNow() }}</p>
                     <p style="margin: 0; padding: 0; font-size: 12px; color: #999999; font-weight: 700;" v-if="['STARTED', 'CLONING', 'CONTAINERIZING', 'RUNNING', 'CLEANING'].includes(job.status)">Started {{ this.moment(job.started).fromNow() }}</p>
                     <p style="margin: 0; padding: 0; font-size: 12px; color: #999999; font-weight: 700;" v-if="['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)">Finished {{ this.moment(job.ended).fromNow() }}</p>
                   </div>
+                  <!-- END Job Info -->
+                  <!-- BEGIN Job Status -->
                   <div style="display: flex; justify-content: start;">
                     <div class="env-sidebar-job-status my-auto" v-if="false"></div>
                     <div :class="{'spinner-grow':true, 'finished':(['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)), 'my-auto':true, 'node': (['STARTING_NODE', 'NODE_STARTED'].includes(job.status)), 'pending':(job.status == 'PENDING'), 'success': (['STARTED', 'CLONING', 'CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED'].includes(job.status)), 'failed': (job.status == 'FAILED' || job.status == 'BUILD_FAILED')}" role="status" style="width: 10px; height: 10px;"></div>
@@ -348,36 +362,69 @@
                     <span class="my-auto ms-2" v-if="job.status == 'FAILED'">Job failed</span>
                     <span class="my-auto ms-2" v-if="job.status == 'BUILD_FAILED'">Build failed</span>
                   </div>
+                  <!-- END Job Status -->
                 </div>
+                <!-- END Job Header -->
 
+                <!-- BEGIN Output Container -->
                 <div style="width: 100%; background: rgba(191, 191, 191, 0.25); border-radius: 5px; padding: 5px 10px;">
-                  <div style="display: flex; justify-content: space-between;">
+                  
+                  <!-- BEGIN Output Toggle -->
+                  <div style="display: flex; justify-content: space-between; cursor: pointer;" @click="this.toggleOutput(job)">
                     <p class="my-auto" style="margin: 0; padding: 0; font-size: 14px;">Output</p>
-                    <v-icon icon="mdi-chevron-up" class="my-auto"></v-icon>
+                    <v-icon :icon="(job.showOutput) ? 'mdi-chevron-up' : 'mdi-chevron-down'" class="my-auto"></v-icon>
                   </div>
+                  <!-- END Output Toggle -->
 
-                  <div v-if="!['CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)" style="width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; color: #999999;">
-                    Waiting for run to begin
-                  </div>
+                  <template v-if="job.showOutput">
+                    <!-- BEGIN Waiting Overlay -->
+                    <!-- Show waiting message while job is in STARTING_NODE, NODE_STARTED, PENDING, STARTED, CLONING -->
+                    <div v-if="!['CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)" style="width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; color: #999999;">
+                      Waiting for run to begin
+                    </div>
+                    <!-- END Waiting Overlay -->
 
-                  <div v-if="['CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status) && job.output.length > 0" style="width: 100%; min-height: 200px; max-height: 500px !important; overflow-y: scroll !important;" :id="`job-output-${job.jobId}`">
-                    <template v-for="output in job.output">
-                      <div class="env-sidebar-job-output">
-                        <div class="me-3" style="align-self: flex-start; background: rgba(191, 191, 191, 0.5); font-size: 12px; padding: 1px 5px; border-radius: 5px; min-width: 85px; text-align: center;">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
-                        <p :class="{'my-auto': true, 'build-output': (output.build)}" style="margin: 0; font-size: 14px">{{ output.content }}</p>
+                    <!-- BEGIN Output Content -->
+                    <div v-if="['CONTAINERIZING', 'RUNNING', 'CLEANING', 'COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status)" style="width: 100%; min-height: 200px; max-height: 500px !important; overflow-y: scroll !important;" :id="`job-output-${job.jobId}`">
+                      <!-- TODO: Add 'Load More' button. Only display if job is finished (in COMPLETED, FAILED, BUILD_FAILED) -->
+                      <!-- BEGIN Output Loading Overlay -->
+                      <div v-if="job.output.length == 0 || job.loading" style="width: 100%; height: 200px; display: flex; justify-content: center; align-items: center; color: #999999;">
+                        <v-progress-circular indeterminate></v-progress-circular>
                       </div>
-                    </template>
-                  </div>
-                </div>
+                      <!-- END Output Loading Overlay -->
+                      <!-- BEGIN Load More -->
+                      <div class="my-2" v-if="(job.output.length < job.logCount) && !job.loading & (['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status))" style="width: 100%; height: 100px; display: flex; justify-content: center; flex-direction: column; align-items: center; border: 2px solid #d3d3d3; border-radius: 5px;">
+                        <p class="m-0 mb-2">...{{ job.logCount - job.output.length }} more lines available</p>
+                        <button class="env-load-more" :disabled="job.loading" @click="this.loadMoreLogs(job)">Load More</button>
+                      </div>
+                      <!-- END Load More -->
+                      <!-- BEGIN Output Lines -->
+                      <template v-for="output in job.output" v-if="!job.loading">
+                        <div class="env-sidebar-job-output">
+                          <div class="me-3" style="align-self: flex-start; background: rgba(191, 191, 191, 0.5); font-size: 12px; padding: 1px 5px; border-radius: 5px; min-width: 85px; text-align: center;">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
+                          <p :class="{'my-auto': true, 'build-output': (output.build)}" style="margin: 0; font-size: 14px; font-family: monospace;">{{ output.content }}</p>
+                        </div>
+                      </template>
+                      <!-- END Output Lines -->
+                    </div>
+                    <!-- END Output Content -->
+                  </template>
 
-                <div class="mt-2" style="background: rgba(55, 154, 245, 0.2); color: #379af5; border: 1px solid #379af5; border-radius: 5px; padding: 5px 10px; font-size: 16px;" v-if="job.status == 'STARTING_NODE'">
-                  <div style="display: flex; justify-content: start; font-weight: 800;"><v-icon class="my-auto me-1" icon="mdi-alert-circle-outline"></v-icon> <p class="m-0 my-auto">Heads up</p></div> 
-                  <hr class="my-2">
-                  Job execution servers are provisioned on-demand. Cold start jobs may take up to 2 minutes to begin, but subsequent runs will be faster. We appreciate your patience.
                 </div>
+                <!-- END Output Container -->
+                
+                <!-- BEGIN Cold Start Alert -->
+                <div class="mt-2" style="background: rgba(55, 154, 245, 0.2); color: #379af5; border: 1px solid #379af5; border-radius: 5px; padding: 5px 10px; font-size: 16px;" v-if="job.status == 'STARTING_NODE'">
+                  <div style="display: flex; justify-content: start; font-weight: 800;"><v-icon class="my-auto me-1" icon="mdi-alert-circle-outline"></v-icon> <p class="m-0 my-auto" style="font-size: 17px;">Heads up</p></div> 
+                  Job execution servers are provisioned on demand. Cold starts may take up to 2 minutes to begin, but subsequent executions will run significantly faster. We appreciate your patience.
+                </div>
+                <!-- END Cold Start Alert -->
+
               </div>
+              <!-- END Individual Job -->
 
             </template>
+            <!-- END Jobs List -->
 
           </div>
           <!-- END Console Content -->
@@ -469,9 +516,15 @@ export default {
     },
     async loadJobs() {
       this.loading = true;
-      this.jobs = await this.$store.dispatch('job/listJobs', {
+      let jobs = await this.$store.dispatch('job/listJobs', {
           containerId: this.$route.params.containerId,
           accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      jobs.forEach((job) => {
+        job.timeoutId = null;
+        job.showOutput = false;
+        job.loading = false;
+        this.jobs.push(job);
       });
       this.loading = false;
     },
@@ -581,10 +634,40 @@ export default {
       });
       if(response.status == 201 && !this.jobs.some(job => job.jobId == response.data.jobId)) {
         response.data.timeoutId = null;
+        response.data.showOutput = true;
         this.jobs.splice(0, 0, response.data);
       }
       this.loading = false;
       this.sidebarTab = 0;
+    },
+    async toggleOutput(job) {
+      job.showOutput = !job.showOutput;
+      if(['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status) && job.output.length == 0) {
+        job.loading = true;
+        let response = await this.$store.dispatch('job/getJobOutput', {
+            jobId: job.jobId,
+            containerId: this.$route.params.containerId,
+            offset: 0,
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        job.output = response.data;
+        job.loading = false;
+        setTimeout(() => {
+          const latestElement = document.getElementById(`job-output-${job.jobId}`).lastElementChild;
+          latestElement.scrollIntoView({ behavior: "smooth", block: "end"});
+        }, 15);
+      }
+    },
+    async loadMoreLogs(job) {
+      job.loading = true;
+      let response = await this.$store.dispatch('job/getJobOutput', {
+          jobId: job.jobId,
+          containerId: this.$route.params.containerId,
+          offset: job.output.length,
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      job.output = response.data.concat(job.output);
+      job.loading = false;
     },
     initPusherConnection() {
       let pusher = new Pusher('1b48cf0e39f77099506c', {
@@ -619,6 +702,8 @@ export default {
       channel.bind('job-queued', (data) => {
         if(!this.jobs.some(job => job.jobId == data.jobId)) {
           data.timeoutId = null;
+          data.showOutput = true;
+          data.loading = false;
           this.jobs.splice(0, 0, data);
         }
       });
