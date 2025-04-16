@@ -38,7 +38,7 @@ export default {
             return response.status;
         },
         async listContainers({commit}, data) {
-            let response = await Api().get(`containers`, {
+            let response = await Api().get(`containers?offset=${data.offset}`, {
                 headers: {
                     'Authorization': `Bearer ${data.accessToken}`
                 }

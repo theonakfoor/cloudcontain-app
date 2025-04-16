@@ -32,6 +32,37 @@
   justify-content: flex-start;
 }
 
+.drive-sidebar {
+  height: 100%;
+  width: 300px;
+  padding: 5px 10px;
+}
+
+.drive-scroll {
+  flex: 1;
+  padding-top: 5px;
+  padding-left: 10px;
+  padding-right: 20px;
+  padding-bottom: 0px;
+}
+
+.drive-scroll-content {
+  background: rgba(191, 191, 191, 0.10);
+  width: 100%;
+  height: 100%;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  max-height: calc(100vh - 56px);
+  overflow-y: scroll;
+  padding: 0px 20px;
+}
+
+.gradient-text {
+  background-image: linear-gradient(to right, #67d0fd, #468bf6);
+  color: transparent;
+  background-clip: text;
+}
+
 .drive-search {
   width: 500px;
   display: flex;
@@ -48,6 +79,7 @@
   outline: none;
 }
 
+
 .global-input {
   width: 100%;
   background: rgba(191, 191, 191, 0.15);
@@ -59,7 +91,7 @@
 
 .drive-dialog {
   width: 100%;
-  padding: 15px;
+  padding: 25px;
   background: white;
   border-radius: 5px;
 }
@@ -150,13 +182,13 @@
   margin-bottom: 10px;
   display: inline-block;
   padding: 10px; 
-  background: rgba(191, 191, 191, 0.10);
+  background: rgba(191, 191, 191, 0.15);
   border-radius: 5px;
 }
 
 .drive-content-container-thumb:hover {
   cursor: pointer;
-  background: rgba(191, 191, 191, 0.25);
+  background: rgba(191, 191, 191, 0.30);
 }
 
 .drive-content-container-thumb-name {
@@ -189,6 +221,18 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+.drive-container-usage-indicator {
+  width: calc(33.33% - 10px);
+  height: 5px; 
+  background: rgba(191, 191, 191, 0.35); 
+  border-radius: 5px; 
+  margin-right: 10px;
+}
+
+.drive-container-usage-indicator.active {
+  background: #379af5;
 }
 
 .drive-content-tabs {
@@ -664,12 +708,24 @@
   width: 100%;
 }
 
+.drive-create-new.outline {
+  max-width: 450px;
+  min-width: 200px;
+  background: 0; 
+  color: #bfbfbf;
+  border: 2px solid #bfbfbf;
+}
+
 .env-execute:hover {
   border: 2px solid rgba(0, 165, 80, 0.30);
 }
 
 .drive-create-new:hover {
   border: 2px solid rgba(55, 154, 245, 0.3);
+}
+
+.drive-create-new.outline:hover {
+  border: 2px solid #bfbfbf;
 }
 
 .env-menu-option {
@@ -761,4 +817,13 @@
 
 .build-output {
   color: #a6a6a6;
+}
+
+.err-output {
+  color: red;
+}
+
+.v-skeleton-loader__bone {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }

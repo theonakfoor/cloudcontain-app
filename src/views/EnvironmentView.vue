@@ -317,8 +317,7 @@
 
             <!-- BEGIN Execution Button -->
             <button class="env-execute mb-3" :disabled="this.loading || this.hasActiveJob()" @click="this.execute()">
-              <v-icon icon="mdi-play-speed" class="my-auto me-2"></v-icon>
-              Execute Container
+              <v-icon icon="mdi-play-speed" class="my-auto me-2"></v-icon> Execute Container
             </button>   
             <!-- END Execution Button -->
             
@@ -402,7 +401,7 @@
                       <template v-for="output in job.output" v-if="!job.loading">
                         <div class="env-sidebar-job-output">
                           <div class="me-3" style="align-self: flex-start; background: rgba(191, 191, 191, 0.5); font-size: 12px; padding: 1px 5px; border-radius: 5px; min-width: 85px; text-align: center;">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
-                          <p :class="{'my-auto': true, 'build-output': (output.build)}" style="margin: 0; font-size: 14px; font-family: monospace;">{{ output.content }}</p>
+                          <p :class="{'my-auto': true, 'build-output': (output.level == 'build'), 'err-output': (output.level == 'stderr')}" style="margin: 0; font-size: 14px; font-family: monospace;">{{ output.content }}</p>
                         </div>
                       </template>
                       <!-- END Output Lines -->
@@ -690,7 +689,7 @@ export default {
           job.output.push({
             content: data.content,
             timestamp: data.timestamp,
-            build: data.build
+            level: data.level,
           });
           clearTimeout(job.timeoutId);
           job.timeoutId = setTimeout(() => {

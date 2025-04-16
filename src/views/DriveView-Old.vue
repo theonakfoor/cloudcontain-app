@@ -6,7 +6,7 @@
       max-width="600"
     >
       <div class="drive-dialog">
-        <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create Container</h2>
+        <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create Container</h2>
         <input v-model="this.createContainerDialog.name" class="global-input" type="text" placeholder="Container Name" />
         <div class="global-dialog-action mt-3">
             <button class="global-dialog-action-cancel me-2" @click="this.createContainerDialog.show = false">Cancel</button>
@@ -18,14 +18,14 @@
 
     <!-- BEGIN Delete Container Dialog -->
     <v-dialog
-      v-model="deleteContainerDialog.show"
+      v-model="deleteContainerDialog"
       max-width="500"
     >
         <div class="drive-dialog">
-            <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete Container</h2>
-            <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.deleteContainerDialog.toDelete.name }}</strong>?</p>
+            <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete Container</h2>
+            <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.toDelete.name }}</strong>?</p>
             <div class="global-dialog-action mt-3">
-                <button class="global-dialog-action-cancel me-2" @click="this.deleteContainerDialog.show = false">Cancel</button>
+                <button class="global-dialog-action-cancel me-2" @click="this.deleteContainerDialog = false">Cancel</button>
                 <button class="global-dialog-action-danger" @click="confirmDelete()"><v-icon icon="mdi-delete-empty-outline" class="my-auto me-2"></v-icon> Delete Container</button>
             </div>
         </div>
@@ -37,7 +37,7 @@
     <!-- END Progress Indicator -->
 
     <!-- BEGIN Nav Bar -->
-    <div class="env-bar" style="border: 0;">
+    <div class="env-bar">
         <!-- BEGIN Logo -->
         <img src="../assets/images/cloudcontain.svg" width="150" class="my-auto" />
         <!-- END Logo -->
@@ -93,86 +93,65 @@
     </div>
     <!-- END Nav Bar -->
 
+    <!-- BEGIN Drive Content -->
     <div class="drive-content">
-        <div class="drive-sidebar">
-            <button class="drive-create-new" @click="this.openCreateContainerDialog()"><v-icon icon="mdi-plus" class="my-auto me-2"></v-icon>Create Container</button> 
+
+        <!-- BEGIN Sidebar -->
+        <div class="drive-content-sidebar">
             
-            <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 0), 'mt-4': true}">
-                Home
-                <v-icon icon="mdi-home" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
+            <div class="pa-3">
+
+                <button class="drive-create-new mb-3" @click="this.openCreateContainerDialog()"><v-icon icon="mdi-plus" class="my-auto me-2"></v-icon>Create Container</button> 
+
+                <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 0)}">
+                    Home
+                    <v-icon icon="mdi-home" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
+                </div>
+
+                <hr class="my-2" color="#d3d3d3">
+
+                <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 1), 'mb-2': true}">
+                    Your Containers
+                    <v-icon icon="mdi-package-variant-closed" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
+                </div>
+
+                <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 2), 'mb-5': true}">
+                    Shared with You
+                    <v-icon icon="mdi-account-multiple-outline" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
+                </div>
+
+                <v-progress-linear :model-value="10 * this.recentContainers.length" color="#379af5" height="5" style="border-radius: 5px;"></v-progress-linear>
+                <center><p class="mt-2" style="color: #bfbfbf; font-weight: 400;">{{ this.recentContainers.length }}/10 containers used</p></center>
             </div>
 
-            <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 1), 'mt-4': true}">
-                Job Monitor
-                <v-icon icon="mdi-table-eye" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
+            <!-- BEGIN Sidebar Footer -->
+            <div class="env-sidebar-footer">
+                &copy; {{ new Date().getFullYear() }} cloudcontain.net &bull; <a href="#">Terms of Use</a>
             </div>
-
-            <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 2), 'mt-4': true}">
-                Your Containers
-                <v-icon icon="mdi-package-variant-closed" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
-            </div>
-
-            <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 3), 'mt-2': true}">
-                Shared with You
-                <v-icon icon="mdi-account-multiple-outline" class="my-auto" style="color: #bfbfbf; font-size: 20px;"></v-icon>
-            </div>
-
-            <v-skeleton-loader type="list-item-two-line" v-if="this.loading"></v-skeleton-loader>
-
-            <div class="mt-8" style="width: 100%; display: flex; justify-content: center;" v-if="!this.loading">
-                <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo.containers >= 1)}"></div>
-                <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo.containers >= 2)}"></div>
-                <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo.containers >= 3)}" style="margin-right: 0 !important;"></div>
-            </div>
-
-            <div class="mt-2" style="width: 100%; text-align: center;" v-if="!this.loading">
-                <p style="color: #bfbfbf">{{ this.userInfo.containers }} of 3 <strong>Free</strong> Containers used</p>
-            </div>
-            
+            <!-- END Sidebar Footer -->
 
         </div>
-        <div class="drive-scroll">
-            <div class="drive-scroll-content">
-                <div v-if="this.loading" style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;">
-                    <div style="text-align: center;">
-                        <v-progress-circular
-                            indeterminate
-                            color="#379af5"
-                            size="35"
-                            width="3"
-                        ></v-progress-circular>
-                        <p class="mt-3">Loading your containers...</p>
+        <!-- END Sidebar -->
+
+        <!-- BEGIN Tabs -->
+        <div class="drive-content-tabs pa-5">
+
+            <!-- BEGIN Home Tab -->
+            <div v-if="this.tab == 0">
+
+                <h2 class="m-0"><strong>Welcome back, {{ this.user.given_name }}.</strong></h2>
+                <p class="m-0 mb-5">What do you want to work on this {{ (this.time < 12) ? "morning" : (this.time >= 12 && this.time < 18) ? "afternoon" : "evening" }}?</p>
+                
+                <div style="width: 100%;" class="mb-5">
+                    <div class="mb-2" style="display: flex; width: 100%; justify-content: space-between;">
+                        <p class="drive-content-label my-auto">Recent Containers</p>
+                        <v-tooltip text="Refresh Containers" location="left">
+                            <template v-slot:activator="{ props }">
+                                <button class="drive-content-refresh my-auto" @click="this.loadContainers()" :disabled="this.loading" v-bind="props"><v-icon icon="mdi-refresh"></v-icon></button>
+                            </template>
+                        </v-tooltip>
                     </div>
-                </div>
-                <template v-if="!this.loading">
-                    <div style="width: 100%; padding: 40px 20px; text-align: center;">
-                        <h2 class="m-0">Welcome back, <span class="gradient-text"><strong>{{ this.user.given_name }}</strong></span></h2>
-                        <p class="m-0 mb-5" style="font-size: 20px;">What do you want to work on this {{ (this.time < 12) ? "morning" : (this.time >= 12 && this.time < 18) ? "afternoon" : "evening" }}?</p>
-                    </div>
-                    <p class="drive-content-label">Recent Containers</p>
-                    <div style="width: 100%; padding: 20px; text-align: center; color: #bfbfbf;" v-if="this.recentContainers.data.length == 0 && this.recentContainers.show">
-                        No recent containers
-                    </div>
-                    <p class="drive-content-label mt-2">Recent Jobs</p>
-                    <div style="width: 100%; padding: 20px; text-align: center; color: #bfbfbf;" v-if="this.recentJobs.data.length == 0 && this.recentJobs.show">
-                        No recent jobs
-                    </div>
-                    <p class="drive-content-label mt-2" style="margin: 0 !important;">All Containers</p>
-                    <div style="white-space: nowrap; overflow-x: scroll;" class="mt-2 mb-3">
-                        <div style="display: inline-block; background: rgba(191, 191, 191, 0.25); padding: 2.5px 20px; border-radius: 500px; font-size: 14px; margin-right: 10px;">
-                            Java
-                        </div>
-                        <div style="display: inline-block; background: rgba(191, 191, 191, 0.25); padding: 2.5px 20px; border-radius: 500px; font-size: 14px; margin-right: 10px;">
-                            Python
-                        </div>
-                        <div style="display: inline-block; background: rgba(191, 191, 191, 0.25); padding: 2.5px 20px; border-radius: 500px; font-size: 14px; margin-right: 10px;">
-                            C
-                        </div>
-                        <div style="display: inline-block; background: rgba(191, 191, 191, 0.25); padding: 2.5px 20px; border-radius: 500px; font-size: 14px; margin-right: 10px;">
-                            C++
-                        </div>
-                    </div>
-                    <template v-if="this.containers.data.length > 0" v-for="container in this.containers.data">
+                    <template v-if="this.recentContainers.length > 0" v-for="container in this.recentContainers">
                         <div class="drive-content-container-thumb" @click="openContainer(container.containerId)">
                             <div class="drive-content-container-thumb-name">
                                 <div>
@@ -216,16 +195,26 @@
                             </div>
                         </div>
                     </template>
-                    <div style="width: 100%; padding: 20px; display: flex; align-items: center; justify-content: center; color: #bfbfbf;" v-if="this.containers.data.length == 0 && this.containers.show">
-                        <div style="text-align: center;">
-                            You haven't created any containers yet <br>
-                            <button class="drive-create-new outline mt-3" @click="this.openCreateContainerDialog()">Create a Container</button> 
-                        </div>
+                    <div v-if="this.recentContainers.length == 0 && this.loading" style="width: 100%; text-align: center;">
+                        Fetching containers...
+                        <v-progress-circular
+                        class="ms-1"
+                        color="#379af5"
+                        indeterminate
+                        ></v-progress-circular>
                     </div>
-                </template>
+                    <div v-if="this.recentContainers.length == 0 && !this.loading" style="width: 100%; background: rgba(191, 191, 191, 0.08); padding: 10px; text-align: center; border-radius: 5px;">
+                        You currently have no recent containers
+                    </div>
+                </div>
             </div>
+            <!-- END Home Tab -->
+
         </div>
+        <!-- END Tabs -->
+
     </div>
+    <!-- END Drive Content -->
 
 </template>
 
@@ -239,28 +228,16 @@ export default {
             loading: true,
             tab: 0,
             time: new Date().getHours(),
-            recentContainers: {
-                show: true,
-                data: []
-            },
-            recentJobs: {
-                show: true,
-                data: []
-            },
-            containers: {
-                show: true,
-                data: []
-            },
+            recentContainers: [],
             createContainerDialog: {
                 show: false,
                 name: null,
                 isPublic: false,
                 type: "java"
             },
-            deleteContainerDialog: {
-                show: false,
-                toDelete: null
-            },
+            deleteContainerDialog: false,
+            toDelete: null,
+            createContainerName: null,
             logout: () => {
                 logout();
             },
@@ -271,15 +248,16 @@ export default {
     },
     async mounted() {
         await this.loadContainers();
+        this.loading = false;
+
         this.userInfo = await this.$store.dispatch('user/getUserInfo', {
             accessToken: await this.$auth0.getAccessTokenSilently()
         });
-        this.loading = false;
     },
     methods: {
         openDeleteContainerDialog(container) {
-            this.deleteContainerDialog.toDelete = container;
-            this.deleteContainerDialog.show = true;
+            this.toDelete = container;
+            this.deleteContainerDialog = true;
         },
         openCreateContainerDialog() {
             this.createContainerDialog.name = null;
@@ -287,22 +265,21 @@ export default {
         },
         async loadContainers() {
             this.loading = true;
-            this.containers.data = await this.$store.dispatch('container/listContainers', {
-                offset: 0,
+            this.recentContainers = await this.$store.dispatch('container/listContainers', {
                 accessToken: await this.$auth0.getAccessTokenSilently()
             });
             this.loading = false;
         },
         async createContainer() {
-            this.createContainerDialog.show = false;
             this.loading = true;
             let containerId = await this.$store.dispatch('container/createContainer', {
                 name: this.createContainerDialog.name,
                 accessToken: await this.$auth0.getAccessTokenSilently()
             })
             await this.loadContainers();
-            this.userInfo.containers += 1;
+            this.createContainerDialog.show = false;
             this.loading = false;
+            window.open(`/env/${containerId}`, '_blank');
         },
         openContainer(containerId) {
             window.open(`/env/${containerId}`, "_self");
@@ -311,15 +288,14 @@ export default {
             event.stopPropagation();
         },
         async confirmDelete() {
-            this.deleteContainerDialog.show = false;
             this.loading = true;
             let response = await this.$store.dispatch('container/deleteContainer', {
-                containerId: this.deleteContainerDialog.toDelete.containerId,
+                containerId: this.toDelete.containerId,
                 accessToken: await this.$auth0.getAccessTokenSilently()
             });
             await this.loadContainers();
             if(response == 200) {
-                this.userInfo.containers -= 1;
+                this.deleteContainerDialog = false;
             } else {
                 alert("Error deleting container. Try again later.");
             }
