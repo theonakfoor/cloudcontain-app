@@ -33,6 +33,18 @@ export default {
                 return error.response.status;
             }
         },
+        async deleteFolder({commit}, data) {  
+            try {
+                let response = await Api().delete(encodeURIComponent(`containers/${data.containerId}/folders/${data.folderId}`), {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`
+                    }
+                });
+                return response.status;
+            } catch(error) {
+                return error.response.status;
+            }
+        },
     },
     getters: {
 

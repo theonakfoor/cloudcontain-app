@@ -29,6 +29,14 @@ export default {
             });
             return response.data.containerId;
         },
+        async updateContainer({commit}, data) {
+            let response = await Api().put(`containers/${data.containerId}`, data.updates, {
+                headers: {
+                    'Authorization': `Bearer ${data.accessToken}`
+                }
+            });
+            return response.status;
+        },
         async deleteContainer({commit}, data) {
             let response = await Api().delete(`containers/${data.containerId}`, {
                 headers: {

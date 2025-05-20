@@ -16,14 +16,34 @@
     </v-dialog>
     <!-- END Create Directory Dialog -->
 
+    <!-- BEGIN Delete File Dialog -->
+    <v-dialog
+          v-model="deleteDirectoryDialog.show"
+          max-width="500"
+        >
+        <div class="drive-dialog">
+            <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete Directory</h2>
+            <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.deleteDirectoryDialog.toDelete.name }}</strong>? This action will recursively delete all files and sub-directories under this parent directory.</p>
+            <p class="m-0 mt-2" style="font-size: 18px; color: #e3242b; font-weight: 600;">This action is permanent and cannot be undone.</p>
+            <div class="global-dialog-action mt-4">
+                <button class="global-dialog-action-cancel me-2" @click="this.deleteDirectoryDialog.show = false">Cancel</button>
+                <button class="global-dialog-action-danger" @click="deleteDirectory()"><v-icon icon="mdi-delete-empty-outline" class="my-auto me-2"></v-icon> Delete Directory</button>
+            </div>
+        </div>
+    </v-dialog>
+    <!-- END Delete File Dialog -->
+
     <!-- BEGIN Create File Dialog -->
     <v-dialog
           v-model="createFileDialog.show"
           max-width="500"
         >
       <div class="drive-dialog">
-        <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create File</h2>
+        <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create File</h2>
         <input v-model="this.createFileDialog.name" class="global-input" type="text" placeholder="File Name" />
+        <p style="color: #e3242b;" class="mt-3" v-if="this.createFileDialog.hasNameError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> A file with that name already exists within this directory.</p>
+        <p style="color: #e3242b;" class="mt-3" v-if="this.createFileDialog.hasExtError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> You can only save Java, Python and C files.</p>
+        <p style="color: #e3242b;" class="mt-3" v-if="this.createFileDialog.hasInvalidInput"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Please enter a valid name for the file.</p>
         <div class="global-dialog-action mt-3">
             <button class="global-dialog-action-cancel me-2" @click="this.createFileDialog.show = false">Cancel</button>
             <button class="global-dialog-action-confirm" @click="createFile()"><v-icon icon="mdi-plus-circle-outline" class="my-auto me-2"></v-icon> Create File</button>
@@ -31,6 +51,61 @@
       </div>
     </v-dialog>
     <!-- END Create File Dialog -->
+
+    <!-- BEGIN Delete File Dialog -->
+    <v-dialog
+      v-model="deleteFileDialog.show"
+      max-width="500"
+    >
+        <div class="drive-dialog">
+            <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete File</h2>
+            <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.deleteFileDialog.toDelete.name }}</strong>?</p>
+            <p class="m-0 mt-2" style="font-size: 18px; color: #e3242b; font-weight: 600;">This action is permanent and cannot be undone.</p>
+            <div class="global-dialog-action mt-4">
+                <button class="global-dialog-action-cancel me-2" @click="this.deleteFileDialog.show = false">Cancel</button>
+                <button class="global-dialog-action-danger" @click="deleteFile()"><v-icon icon="mdi-delete-empty-outline" class="my-auto me-2"></v-icon> Delete File</button>
+            </div>
+        </div>
+    </v-dialog>
+    <!-- END Delete File Dialog -->
+
+    <!-- BEGIN Rename File Dialog -->
+    <v-dialog
+          v-model="renameFileDialog.show"
+          max-width="500"
+        >
+      <div class="drive-dialog">
+        <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Rename File</h2>
+        <p class="m-0" style="font-size: 18px;">Please enter a new name for <strong>{{ this.renameFileDialog.toRename.name }}</strong> (<span style="font-family: monospace">{{ this.renameFileDialog.toRename.fileId }}</span>)</p>
+        <input v-model="this.renameFileDialog.name" :class="{'global-input': true, 'error': (this.renameFileDialog.hasNameError || this.renameFileDialog.hasExtError || this.renameFileDialog.hasInvalidInput), 'mt-4': true}" type="text" placeholder="File Name" />
+        <p style="color: #e3242b;" class="mt-3" v-if="this.renameFileDialog.hasNameError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> A file with that name already exists within this directory.</p>
+        <p style="color: #e3242b;" class="mt-3" v-if="this.renameFileDialog.hasExtError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> You can only save Java, Python and C files.</p>
+        <p style="color: #e3242b;" class="mt-3" v-if="this.renameFileDialog.hasInvalidInput"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Please enter a valid name for the file.</p>
+        <div class="global-dialog-action mt-3">
+            <button class="global-dialog-action-cancel me-2" @click="this.renameFileDialog.show = false">Cancel</button>
+            <button class="global-dialog-action-confirm" @click="renameFile()" :disabled="this.loading">
+              <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
+              <v-icon icon="mdi-form-textbox" class="my-auto me-2" v-if="!this.loading"></v-icon> Rename File
+            </button>
+        </div>
+      </div>
+    </v-dialog>
+    <!-- END Rename File Dialog -->
+  
+    <!-- BEGIN Error Dialog -->
+    <v-dialog
+      v-model="errorDialog.show"
+      max-width="500"
+    >
+        <div class="drive-dialog">
+            <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0; color: #e3242b;">Uh oh...</h2>
+            <p class="m-0" style="font-size: 18px;">{{ this.errorDialog.message }}</p>
+            <div class="global-dialog-action mt-4">
+                <button class="global-dialog-action-cancel" @click="this.errorDialog.show = false">Acknowledge</button>
+            </div>
+        </div>
+    </v-dialog>
+    <!-- END Error Dialog -->
 
     <!-- BEGIN Progress Indicator -->
     <v-progress-linear color="#379af5" height="3" :indeterminate="this.loading || this.pageLoading"></v-progress-linear>
@@ -109,10 +184,10 @@
         <div class="env-editor-empty" v-if="this.tabs.length == 0">
           <div style="text-align: center;">
             <v-icon style="color: #bfbfbf; font-size: 55px;" icon="mdi-atom-variant"></v-icon>
-            <p style="font-weight: 800; font-size: 25px;" class="mt-3 m-0">No file selected.</p>
-            <p style="font-weight: 400; font-size: 20px;" class="m-0 mb-5">Open or create a file to get started.</p>
+            <p style="font-weight: 800; font-size: 25px;" class="mt-3 m-0">No file selected</p>
+            <p style="font-weight: 400; font-size: 20px;" class="m-0 mb-5">Open or create a file to get started</p>
             <div style="display: flex; justify-content: center;">
-              <button class="env-action light me-2"><v-icon icon="mdi-folder-file-outline" class="my-auto me-2"></v-icon> Open File</button>
+              <button class="env-action light me-2" @click="this.sidebarTab = 1"><v-icon icon="mdi-folder-file-outline" class="my-auto me-2"></v-icon> Open File</button>
               <button class="env-action light me-2"><v-icon icon="mdi-file-plus-outline" class="my-auto me-2"></v-icon> Create File</button>
               <button class="env-action light"><v-icon icon="mdi-cloud-upload" class="my-auto me-2"></v-icon> Upload File</button>
             </div>
@@ -137,7 +212,6 @@
               </span>
             </template>
             <div class="env-tab-menu mt-1">
-              <p style="color: #bfbfbf; margin: 0; font-weight: 700; font-size: 12px; margin-left: 10px; margin-bottom: 5px;">Tab Options</p>
               <div class="env-menu-option">
                 Create new file
                 <v-icon icon="mdi-file-plus-outline" class="my-auto" style="color: #bfbfbf; font-size: 18px;"></v-icon>
@@ -145,10 +219,6 @@
               <div class="env-menu-option">
                 Open existing file
                 <v-icon icon="mdi-folder-file-outline" class="my-auto" style="color: #bfbfbf; font-size: 18px;"></v-icon>
-              </div>
-              <div class="env-menu-option">
-                Open all files
-                <v-icon icon="mdi-file-multiple-outline" class="my-auto" style="color: #bfbfbf; font-size: 18px;"></v-icon>
               </div>
               <hr class="my-2" color="#d3d3d3">
               <div class="env-menu-option red">
@@ -237,31 +307,27 @@
                 <input class="env-sidebar-content-files-searchbar" placeholder="Search container files" />
                 <v-tooltip text="Create File" location="bottom">
                   <template v-slot:activator="{ props }">
-                    <div @click="openCreateFile()" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-file-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></div>
+                    <div @click="openCreateFileDialog()" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-file-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></div>
                   </template>
                 </v-tooltip>
                 <v-tooltip text="Create Directory" location="bottom">
                   <template v-slot:activator="{ props }">
-                    <div @click="openCreateDirectory()" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-folder-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></div>
+                    <div @click="openCreateDirectoryDialog()" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-folder-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></div>
                   </template>
                 </v-tooltip>
               </div>
 
-              <v-tooltip text="Copy Current Location" location="bottom">
-                <template v-slot:activator="{ props }">
-                  <div class="env-sidebar-content-files-path mt-2" v-bind="props" @click="copyPath()">
-                    <v-icon class="my-auto" icon="mdi-server-outline" @click="openFolder('~', $event)"></v-icon> 
+              <div class="env-sidebar-content-files-path mt-2" v-bind="props" @click="copyPath()">
+                <v-icon class="my-auto" icon="mdi-server-outline" @click="openFolder('~', $event)"></v-icon> 
 
-                    <template v-for="folder in this.currentDirectory.path" v-if="this.currentDirectory.path.length > 0">
-                      <v-icon class="my-auto" icon="mdi-menu-right" style="color: #bfbfbf;"></v-icon> 
-                      <span class="env-editor-source-trail-item sidebar my-auto" @click="openFolder(folder.folderId, $event)">{{ folder.name }}</span> 
-                    </template>
-
-                    <v-icon class="my-auto" icon="mdi-menu-right" style="color: #bfbfbf;" v-if="this.currentDirectory.path.length == 0"></v-icon> 
-                    <span style="color: #bfbfbf" class="env-editor-source-trail-item sidebar my-auto" v-if="this.currentDirectory.path.length == 0">(this container)</span> 
-                  </div>
+                <template v-for="folder in this.currentDirectory.path" v-if="this.currentDirectory.path.length > 0">
+                  <v-icon class="my-auto" icon="mdi-menu-right" style="color: #bfbfbf;"></v-icon> 
+                  <span class="env-editor-source-trail-item sidebar my-auto" @click="openFolder(folder.folderId, $event)">{{ folder.name }}</span> 
                 </template>
-              </v-tooltip>
+
+                <v-icon class="my-auto" icon="mdi-menu-right" style="color: #bfbfbf;" v-if="this.currentDirectory.path.length == 0"></v-icon> 
+                <span style="color: #bfbfbf" class="env-editor-source-trail-item home sidebar my-auto" v-if="this.currentDirectory.path.length == 0">(this container)</span> 
+              </div>
             </div>
             <!-- END Sticky Header -->
             
@@ -272,12 +338,38 @@
               <v-row class="mb-2">
                 <template v-for="folder in this.currentDirectory.directories">
                   <v-col cols="4">
-                    <div @click="openFolder(folder.folderId, $event)" style="display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; text-align: center;">
+                    <div class="env-sidebar-content-files-directory-wrapper" 
+                        @click="openFolder(folder.folderId, $event)" 
+                        :draggable="folder.parent != null"
+                        @dragstart="onDragFolderStart(folder)"
+                        @dragend="onDragFolderEnd"
+                        @dragover.prevent="onDragOver(folder.folderId, $event)"
+                        @dragleave="onDragLeave"
+                        @drop="onDrop(folder.folderId, $event)">
                       <div class="env-sidebar-content-files-directory">
-                        <v-icon icon="mdi-folder-outline" style="font-size: 60px; color: #379af5"></v-icon> 
+                        <v-icon id="folder-icon" icon="mdi-folder-outline" style="font-size: 60px; color: #379af5"></v-icon> 
                       </div>
-                      <p style="margin: 0; padding: 0; font-size: 15px;">{{ folder.name }}</p>
-                      <p style="margin: 0; padding: 0; font-size: 12px; color: #bfbfbf; font-weight: 800;">500MB</p>
+                      <p style="margin: 0; padding: 0; font-size: 15px;">
+                        {{ folder.name }}
+                        <v-menu transition="slide-y-transition" v-if="folder.parent != null">
+                            <template v-slot:activator="{ props }">
+                                <v-icon style="font-size: 18px; color: #bfbfbf;" class="my-auto" icon="mdi-dots-vertical" v-bind="props" @click="openOptions"></v-icon>
+                            </template>
+                            <div class="env-tab-menu mt-1">
+                                <div class="env-menu-option" @click="openRenameDirectoryDialog(folder)">
+                                    Rename directory
+                                    <v-icon icon="mdi-form-textbox" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
+                                </div>
+                                <hr class="my-2" color="#d3d3d3">
+                                <div class="env-menu-option red" @click="openDeleteDirectoryDialog(folder)">
+                                    Delete directory
+                                    <v-icon icon="mdi-delete-outline" class="my-auto before-icon" style="font-size: 22px;"></v-icon>
+                                    <v-icon icon="mdi-delete-empty-outline" class="my-auto after-icon" style="font-size: 22px;"></v-icon>
+                                </div>
+                            </div>
+                        </v-menu>
+                      </p>
+                      <p style="margin: 0; padding: 0; font-size: 12px; color: #bfbfbf; font-weight: 800;" v-if="folder.parent != null">{{ this.formatBytes(folder.size) }}</p>
                     </div>
                   </v-col>
                 </template>
@@ -290,12 +382,44 @@
               <p style="color: #bfbfbf; margin: 0; font-weight: 700;">Files</p>
 
               <template v-for="file in this.currentDirectory.files">
-                <div class="env-sidebar-content-files-file mt-2" @click="(!this.loading) ? openFile(file.fileId) : null">
+                <div class="env-sidebar-content-files-file mt-2" 
+                    @click="(!this.loading) ? openFile(file.fileId) : null" 
+                    draggable="true"
+                    @dragstart="onDragFileStart(file)"
+                    @dragend="onDragFileEnd">
                   <div style="display: flex; flex-direction: row; justify-content: flex-start;">
                     <v-icon class="my-auto me-1" :icon="(this.envInfo.entryPoint == file.fileId) ? 'mdi-location-enter' : 'mdi-cube-outline'" style="color: #379af5;"></v-icon>
                     <p class="my-auto" style="font-size: 15px;">{{ file.name }} <span v-if="this.envInfo.entryPoint == file.fileId" style="color: #379af5;" class="ms-1">(Entry Point)</span></p>
                   </div>
-                  <p class="my-auto" style="color: #bfbfbf; font-size: 13px;">{{ this.moment(file.lastModified).format("MMM Do [at] h:mma") }} <v-icon class="env-sidebar-content-files-file-options my-auto" icon="mdi-dots-vertical"></v-icon></p>
+                  <p class="my-auto" style="color: #bfbfbf; font-size: 13px;">
+                    {{ this.moment(file.lastModified).format("MMM Do [at] h:mma") }} 
+                    <v-menu transition="slide-y-transition">
+                        <template v-slot:activator="{ props }">
+                            <v-icon class="env-sidebar-content-files-file-options my-auto" icon="mdi-dots-vertical" v-bind="props" @click="openOptions"></v-icon>
+                        </template>
+                        <div class="env-tab-menu mt-1">
+                            <div style="margin: 10px; padding: 5px 0px; border: 2px solid #d3d3d3; border-radius: 5px; text-align: center; font-family: monospace; background: rgba(211, 211, 211, 0.2);">
+                              <strong>{{ file.name }}</strong>
+                              <p style="margin: 0; font-family: 'DM Sans'">Java File &mdash; {{ this.formatBytes(file.size) }}</p>
+                            </div>
+                            <div class="env-menu-option" @click="openRenameFileDialog(file)">
+                                Rename file
+                                <v-icon icon="mdi-form-textbox" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
+                            </div>
+                            <div class="env-menu-option" @click="setEntryPoint(file.fileId)" v-if="!(this.envInfo.entryPoint == file.fileId)">
+                                Set as Entry Point
+                                <v-icon icon="mdi-location-enter" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
+                            </div>
+                            <hr class="my-2" color="#d3d3d3">
+                            <div class="env-menu-option red" @click="openDeleteFileDialog(file)" v-if="!(this.envInfo.entryPoint == file.fileId)">
+                                Delete file 
+                                <v-icon icon="mdi-delete-outline" class="my-auto before-icon" style="font-size: 22px;"></v-icon>
+                                <v-icon icon="mdi-delete-empty-outline" class="my-auto after-icon" style="font-size: 22px;"></v-icon>
+                            </div>
+                            <p style="color: rgba(227, 36, 42, 0.6); margin: 10px 0px; padding: 5px 20px;" v-if="(this.envInfo.entryPoint == file.fileId)"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Cannot delete Entry Point</p>
+                        </div>
+                    </v-menu>
+                  </p>
                 </div>
               </template>
 
@@ -304,7 +428,7 @@
               </div>
 
               <div class="mt-5" style="display: flex; justify-content: center;">
-                <p style="color: #bfbfbf; border: 1px solid #d3d3d3; border-radius: 5px; padding: 5px 15px; width: auto;">Total directory size &mdash; <strong>1.3GB</strong></p>
+                <p style="color: #bfbfbf; border: 1px solid #d3d3d3; border-radius: 5px; padding: 5px 15px; width: auto;">Total {{ (this.currentDirectory.folderId == "~") ? "container" : "directory" }} size &mdash; <strong>{{ this.formatBytes(this.currentDirectory.size) }}</strong></p>
               </div>
             </div>
             <!-- END Content Display -->
@@ -400,7 +524,7 @@
                       <!-- BEGIN Output Lines -->
                       <template v-for="output in job.output" v-if="!job.loading">
                         <div class="env-sidebar-job-output">
-                          <div class="me-3" style="align-self: flex-start; background: rgba(191, 191, 191, 0.5); font-size: 12px; padding: 1px 5px; border-radius: 5px; min-width: 85px; text-align: center;">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
+                          <div :class="{'me-3': true, 'output-timestamp': true, 'err': (output.level == 'stderr')}">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
                           <p :class="{'my-auto': true, 'build-output': (output.level == 'build'), 'err-output': (output.level == 'stderr')}" style="margin: 0; font-size: 14px; font-family: monospace;">{{ output.content }}</p>
                         </div>
                       </template>
@@ -448,7 +572,6 @@
 <script>
 import {basicSetup} from "codemirror"
 import {EditorView} from "@codemirror/view"
-import {javascript} from "@codemirror/lang-javascript"
 import {java} from "@codemirror/lang-java"
 import { useAuth0 } from '@auth0/auth0-vue';
 import moment from "moment";
@@ -462,13 +585,38 @@ export default {
       envInfo: null,
       sidebarTab: 0,
       currentDirectory: null,
+      draggedFile: null,
+      draggedFolder: null,
       createDirectoryDialog: {
         show: false,
         name: null
       },
       createFileDialog: {
         show: false,
+        hasNameError: false,
+        hasExtError: false,
+        hasInvalidInput: false,
         name: null
+      },
+      renameFileDialog: {
+        show: false,
+        hasNameError: false,
+        hasExtError: false,
+        hasInvalidInput: false,
+        name: null,
+        toRename: null
+      },
+      deleteFileDialog: {
+        show: false,
+        toDelete: null
+      },
+      deleteDirectoryDialog: {
+        show: false,
+        toDelete: null
+      },
+      errorDialog: {
+        show: false,
+        message: null
       },
       tabs: [],
       activeTab: null,
@@ -497,13 +645,20 @@ export default {
     openTab(fileId) {
       this.activeTab = this.tabs.find(tab => tab.fileId == fileId);;
     },
-    openCreateDirectory() {
+    showErrorDialog(message) {
+      this.errorDialog.message = message;
+      this.errorDialog.show = true;
+    },
+    openCreateDirectoryDialog() {
       this.createDirectoryDialog.name = null;
       this.createDirectoryDialog.show = true;
     },
-    openCreateFile() {
+    openCreateFileDialog() {
       this.createFileDialog.name = null;
       this.createFileDialog.show = true;
+      this.createFileDialog.hasExtError = false;
+      this.createFileDialog.hasNameError = false;
+      this.createFileDialog.hasInvalidInput = false;
     },
     closeTab(fileId, event = null) {
       if(event != null) { event.stopPropagation(); }
@@ -512,6 +667,58 @@ export default {
       if(this.activeTab.fileId == fileId) {
         this.activeTab = this.tabs.length > 0 ? this.tabs[0] : null;
       }
+    },
+    onDragFileStart(file) {
+      this.draggedFile = file;
+    },
+    onDragFileEnd() {
+      this.draggedFile = null;
+    },
+    onDragFolderStart(folder) {
+      this.draggedFolder = folder;
+    },
+    onDragFolderEnd() {
+      this.draggedFolder = null;
+    },
+    onDragOver(folderId, event) {
+      if(this.draggedFile != null || (this.draggedFolder != null && this.draggedFolder.folderId != folderId)) {
+        event.currentTarget.classList.add('hovered');
+        event.currentTarget.querySelector("#folder-icon").classList.remove('mdi-folder-outline');
+        event.currentTarget.querySelector("#folder-icon").classList.add('mdi-folder-open-outline');
+      }
+    },
+    onDragLeave(event) {
+      event.currentTarget.classList.remove('hovered');
+      event.currentTarget.querySelector("#folder-icon").classList.remove('mdi-folder-open-outline');
+      event.currentTarget.querySelector("#folder-icon").classList.add('mdi-folder-outline');
+    },
+    async onDrop(folderId, event) {
+      event.currentTarget.classList.remove('hovered');
+      event.currentTarget.querySelector("#folder-icon").classList.remove('mdi-folder-open-outline');
+      event.currentTarget.querySelector("#folder-icon").classList.add('mdi-folder-outline');
+      if(this.draggedFile != null) {
+        let fileId = this.draggedFile.fileId;
+        let response = await this.$store.dispatch('file/updateFile', {
+            containerId: this.$route.params.containerId,
+            fileId: fileId,
+            updates: {
+                folder: folderId
+            },
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        if(response.status == 200) {
+          let tab = this.tabs.find(tab => tab.fileId == fileId);
+          if(tab != null) 
+            Object.assign(tab, response.data);
+          await this.loadDirectory(this.currentDirectory.folderId);
+          this.reloadDirectorySize();
+        } else if(response.status == 409) {
+          this.showErrorDialog("A file with the same name already exists in that directory.");
+        }
+        this.draggedFile = null;
+      } else if(this.draggedFolder != null && this.draggedFolder.folderId != folderId) {
+        alert("Do you want to move " + this.draggedFolder.name + " into " + folderId + "?");
+      } 
     },
     async loadJobs() {
       this.loading = true;
@@ -534,6 +741,17 @@ export default {
           containerId: this.$route.params.containerId,
           accessToken: await this.$auth0.getAccessTokenSilently()
       });
+      if(folderId != "~") {
+        this.currentDirectory.directories.unshift({
+          containerId: this.$route.params.containerId,
+          created: null,
+          folderId: this.currentDirectory.parent,
+          lastModified: null,
+          name: "..",
+          parent: null,
+          size: 0
+        });
+      }
       this.loading = false;
     },
     async openFolder(folderId, event = null) {
@@ -554,17 +772,32 @@ export default {
     },
     async createFile() {
       this.loading = true;
-      let response = await this.$store.dispatch('file/createFile', {
-          name: this.createFileDialog.name,
-          folderId: this.currentDirectory.folderId,
-          containerId: this.$route.params.containerId,
-          accessToken: await this.$auth0.getAccessTokenSilently()
-      });
-      if(response.isEntry)
-        this.envInfo.entryPoint = response.fileId;
-      await this.loadDirectory(this.currentDirectory.folderId);
+      this.createFileDialog.hasExtError = false;
+      this.createFileDialog.hasNameError = false;
+      this.createFileDialog.hasInvalidInput = false;
+      if(this.createFileDialog.name != null && this.createFileDialog.name.trim() != "") {
+        let response = await this.$store.dispatch('file/createFile', {
+            name: this.createFileDialog.name,
+            folderId: this.currentDirectory.folderId,
+            containerId: this.$route.params.containerId,
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        if(response.status == 201) {
+          if(response.data.isEntry)
+            this.envInfo.entryPoint = response.data.fileId;
+          await this.loadDirectory(this.currentDirectory.folderId);
+          this.createFileDialog.show = false;
+        } else if(response.status == 403) {
+          this.createFileDialog.hasExtError = true;
+        } else if(response.status == 409) {
+          this.createFileDialog.hasNameError = true;
+        } else if(response.status == 400) {
+          this.createFileDialog.hasInvalidInput = true;
+        }
+      } else {
+        this.createFileDialog.hasInvalidInput = true;
+      }
       this.loading = false;
-      this.createFileDialog.show = false;
     },
     async openFile(fileId) {
       if(this.tabs.some(tab => tab.fileId == fileId)) {
@@ -584,7 +817,7 @@ export default {
         file.timeoutId = null;
         file.saving = null;
         this.tabs.push(file);
-        // Wait 5ms for DOM to load before rendering editor
+        // Wait 10ms for DOM to load before rendering editor
         let tab = this.tabs.find(tab => tab.fileId == fileId);
         setTimeout(() => {
           tab.pad = new EditorView({
@@ -604,7 +837,7 @@ export default {
                 })
               ]
           });
-        }, 5);
+        }, 10);
         this.activeTab = tab;
         this.loading = false;
       }
@@ -614,16 +847,138 @@ export default {
       tab.saving = true;
       this.loading = true;
       let response = await this.$store.dispatch('file/updateContent', {
-          fileId: tab.fileId,
+          fileId: fileId,
           containerId: this.$route.params.containerId,
           content: doc.toString(),
           accessToken: await this.$auth0.getAccessTokenSilently()
       });
       tab.lastModified = response.lastModified;
-      if(this.currentDirectory.files.some(file => file.fileId == fileId))
-        this.currentDirectory.files.find(file => file.fileId == fileId).lastModified = response.lastModified;
+      let target = this.currentDirectory.files.find(file => file.fileId == fileId);
+      if(target != null) {  
+        Object.assign(target, response);
+        this.reloadDirectorySize();
+      }
       tab.saving = false;
       this.loading = false;
+    },
+    async setEntryPoint(fileId) {
+      this.loading = true;
+      let response = await this.$store.dispatch('container/updateContainer', {
+          containerId: this.$route.params.containerId,
+          updates: {
+              entryPoint: fileId
+          },
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      if (response == 204)
+        this.envInfo.entryPoint = fileId;
+      this.loading = false;
+    },
+    reloadDirectorySize() {
+      // NOTE: Could potentially integrate this code into the API response
+      this.currentDirectory.size = 0
+      this.currentDirectory.directories.forEach((directory) => {
+        this.currentDirectory.size += directory.size;
+      });
+      this.currentDirectory.files.forEach((file) => {
+        this.currentDirectory.size += file.size;
+      });
+    },
+    openDeleteFileDialog(file) {
+      this.deleteFileDialog.toDelete = file;
+      this.deleteFileDialog.show = true;
+    },
+    openDeleteDirectoryDialog(folder) {
+      this.deleteDirectoryDialog.toDelete = folder;
+      this.deleteDirectoryDialog.show = true;
+    },
+    openRenameFileDialog(file) {
+      this.renameFileDialog.toRename = file;
+      this.renameFileDialog.name = null;
+      this.renameFileDialog.show = true;
+      this.renameFileDialog.hasNameError = false;
+      this.renameFileDialog.hasExtError = false;
+      this.renameFileDialog.hasInvalidInput = false;
+    },
+    async deleteFile() {
+      this.loading = true; 
+      let targetId = this.deleteFileDialog.toDelete.fileId;
+      let response = await this.$store.dispatch('file/deleteFile', {
+          containerId: this.$route.params.containerId,
+          fileId: targetId,
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      if(response == 200) {
+        let tabIdx = this.tabs.findIndex(tab => tab.fileId == targetId);
+        if (tabIdx != -1) {
+          this.tabs.splice(tabIdx, 1);
+          if(this.activeTab.fileId == targetId) {
+            this.activeTab = this.tabs.length > 0 ? this.tabs[this.tabs.length-1] : null;
+          }
+        }
+        let idx = this.currentDirectory.files.findIndex(file => file.fileId == targetId);
+        this.currentDirectory.files.splice(idx, 1);
+        this.reloadDirectorySize();
+      } else {
+        this.showErrorDialog("An unknown error occurred while deleting the file. Please try again.");
+      }
+      this.loading = false;
+      this.deleteFileDialog.show = false;
+    },
+    async deleteDirectory() {
+      this.loading = true;
+      let targetId = this.deleteDirectoryDialog.toDelete.folderId;
+      let response = await this.$store.dispatch('folder/deleteFolder', {
+          containerId: this.$route.params.containerId,
+          folderId: targetId,
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      if(response == 200) {
+        let idx = this.currentDirectory.directories.findIndex(folder => folder.folderId == targetId);
+        this.currentDirectory.directories.splice(idx, 1);
+        this.reloadDirectorySize();
+      } else {
+        this.showErrorDialog("An unknown error occurred while deleting the directory. Please try again.");
+      }
+      this.loading = false;
+      this.deleteDirectoryDialog.show = false;
+    },
+    async renameFile() {
+      this.loading = true;
+      this.renameFileDialog.hasExtError = false;
+      this.renameFileDialog.hasNameError = false;
+      this.renameFileDialog.hasInvalidInput = false;
+      if(this.renameFileDialog.name != null && this.renameFileDialog.name.trim() != "") {
+        let fileId = this.renameFileDialog.toRename.fileId;
+        let response = await this.$store.dispatch('file/updateFile', {
+            containerId: this.$route.params.containerId,
+            fileId: fileId,
+            updates: {
+                name: this.renameFileDialog.name.trim()
+            },
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        if(response.status == 200) {
+          if(this.tabs.some(tab => tab.fileId == fileId)) {
+            let tab = this.tabs.find(tab => tab.fileId == fileId);
+            tab.name = this.renameFileDialog.name.trim();
+            tab.lastModified = response.data.lastModified;
+          }
+          let target = this.currentDirectory.files.find(file => file.fileId == fileId);
+          target.name = this.renameFileDialog.name.trim();
+          target.lastModified = response.data.lastModified;
+          this.renameFileDialog.show = false;
+        } else if(response.status == 403) {
+          this.renameFileDialog.hasExtError = true;
+        } else if(response.status == 409) {
+          this.renameFileDialog.hasNameError = true;
+        } else if(response.status == 400) {
+          this.renameFileDialog.hasInvalidInput = true;
+        }
+      } else {
+        this.renameFileDialog.hasInvalidInput = true;
+      }
+      this.loading = false
     },
     async execute() {
       this.loading = true;
@@ -677,8 +1032,9 @@ export default {
         let job = this.jobs.find(job => job.jobId == data.jobId);
         if(job != null) {
           job.status = data.status;
-          if(data.status == 'STARTED')
+          if(data.status == 'STARTED') {
             job.started = data.timestamp;
+          }
           if(data.status == 'COMPLETED' || data.status == 'FAILED' || data.status == 'BUILD_FAILED')
             job.ended = data.timestamp;
         }
@@ -707,14 +1063,24 @@ export default {
         }
       });
     },
+    openOptions(event) {
+        event.stopPropagation();
+    },
     hasActiveJob() {
       return this.jobs.some(job => !['COMPLETED', 'FAILED', 'BUILD_FAILED'].includes(job.status));
     },
     copyPath() {
-      navigator.clipboard.writeText(`~/${this.currentDirectory.path.map(folder => (folder.name.includes(" ") ? `"${folder.name}"`: folder.name)).join("/")}${(this.currentDirectory.path.length > 0 ? "/" : "")}`);
+      navigator.clipboard.writeText(`{{BASE}}/${this.currentDirectory.path.map(folder => (folder.name.includes(" ") ? `"${folder.name}"`: folder.name)).join("/")}${(this.currentDirectory.path.length > 0 ? "/" : "")}`);
     },
     moment(date) {
       return moment.utc(date).local();
+    },
+    formatBytes(bytes) {
+      const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+      if (bytes === 0) return '0B';
+      const i = Math.floor(Math.log(bytes) / Math.log(1024));
+      const value = Math.ceil(bytes / Math.pow(1024, i));
+      return `${value}${units[i]}`;
     },
     home() {
       window.open(`/drive`, "_self");

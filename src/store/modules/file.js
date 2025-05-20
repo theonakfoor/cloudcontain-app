@@ -16,9 +16,9 @@ export default {
                         'Authorization': `Bearer ${data.accessToken}`
                     }
                 });
-                return response.data;
+                return response;
             } catch(error) {
-                return error.response.status;
+                return error.response;
             }
         },
         async getFile({commit}, data) {
@@ -31,6 +31,18 @@ export default {
                 return response.data;
             } catch(error) {
                 return error.response.status;
+            }
+        },
+        async updateFile({commit}, data) {
+            try {
+                let response = await Api().put(encodeURIComponent(`containers/${data.containerId}/files/${data.fileId}`), data.updates, {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`
+                    }
+                });
+                return response;
+            } catch(error) {
+                return error.response;
             }
         },
         async readContent({commit}, data) {
@@ -54,6 +66,18 @@ export default {
                     }
                 });
                 return response.data;
+            } catch(error) {
+                return error.response.status;
+            }
+        },
+        async deleteFile({commit}, data) {  
+            try {
+                let response = await Api().delete(encodeURIComponent(`containers/${data.containerId}/files/${data.fileId}`), {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`
+                    }
+                });
+                return response.status;
             } catch(error) {
                 return error.response.status;
             }
