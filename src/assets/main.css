@@ -9,6 +9,10 @@
   font-family: "DM Sans";
 }
 
+::-webkit-scrollbar {
+    display: none;
+}
+
 .env-bar {
   width: 100%; 
   display: flex; 
@@ -567,6 +571,7 @@
 
 .env-sidebar-content-files-directory-wrapper.hovered {
   border: 2px solid #379af5;
+  background: rgba(55, 154, 245, 0.2);
 }
 
 .env-sidebar-content-files-directory {

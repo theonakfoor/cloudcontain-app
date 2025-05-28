@@ -6,17 +6,22 @@
           max-width="500"
         >
       <div class="drive-dialog">
-        <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create Directory</h2>
-        <input v-model="this.createDirectoryDialog.name" class="global-input" type="text" placeholder="Directory Name" />
+        <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create Directory</h2>
+        <input v-model="this.createDirectoryDialog.name" :class="{'global-input': true, 'error': (this.createDirectoryDialog.hasNameError || this.createDirectoryDialog.hasInvalidInput)}"  type="text" placeholder="Directory Name" @keyup.enter="createDirectory" />
+        <p style="color: #e3242b;" class="mt-3" v-if="this.createDirectoryDialog.hasNameError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> A sub-directory with that name already exists within this directory.</p>
+        <p style="color: #e3242b;" class="mt-3" v-if="this.createDirectoryDialog.hasInvalidInput"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Please enter a valid name for the directory.</p>
         <div class="global-dialog-action mt-3">
             <button class="global-dialog-action-cancel me-2" @click="this.createDirectoryDialog.show = false">Cancel</button>
-            <button class="global-dialog-action-confirm" @click="createDirectory()"><v-icon icon="mdi-plus-circle-outline" class="my-auto me-2"></v-icon> Create Directory</button>
+            <button class="global-dialog-action-confirm" @click="createDirectory" :disabled="this.loading">
+              <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
+              <v-icon icon="mdi-plus-circle-outline" class="my-auto me-2" v-if="!this.loading"></v-icon> Create Directory
+            </button>
         </div>
       </div>
     </v-dialog>
     <!-- END Create Directory Dialog -->
 
-    <!-- BEGIN Delete File Dialog -->
+    <!-- BEGIN Delete Directory Dialog -->
     <v-dialog
           v-model="deleteDirectoryDialog.show"
           max-width="500"
@@ -25,13 +30,38 @@
             <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete Directory</h2>
             <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.deleteDirectoryDialog.toDelete.name }}</strong>? This action will recursively delete all files and sub-directories under this parent directory.</p>
             <p class="m-0 mt-2" style="font-size: 18px; color: #e3242b; font-weight: 600;">This action is permanent and cannot be undone.</p>
-            <div class="global-dialog-action mt-4">
+            <div class="global-dialog-action mt-3">
                 <button class="global-dialog-action-cancel me-2" @click="this.deleteDirectoryDialog.show = false">Cancel</button>
-                <button class="global-dialog-action-danger" @click="deleteDirectory()"><v-icon icon="mdi-delete-empty-outline" class="my-auto me-2"></v-icon> Delete Directory</button>
+                <button class="global-dialog-action-danger" @click="deleteDirectory()" :disabled="this.loading">
+                  <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
+                  <v-icon icon="mdi-delete-empty-outline" class="my-auto me-2" v-if="!this.loading"></v-icon> Delete Directory
+                </button>
             </div>
         </div>
     </v-dialog>
-    <!-- END Delete File Dialog -->
+    <!-- END Delete Directory Dialog -->
+
+    <!-- BEGIN Rename Directory Dialog -->
+    <v-dialog
+          v-model="renameDirectoryDialog.show"
+          max-width="500"
+        >
+      <div class="drive-dialog">
+        <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Rename Directory</h2>
+        <p class="m-0" style="font-size: 18px;">Please enter a new name for <strong>{{ this.renameDirectoryDialog.toRename.name }}</strong> (<span style="font-family: monospace">{{ this.renameDirectoryDialog.toRename.folderId }}</span>)</p>
+        <input v-model="this.renameDirectoryDialog.name" :class="{'global-input': true, 'error': (this.renameDirectoryDialog.hasNameError || this.renameDirectoryDialog.hasInvalidInput), 'mt-4': true}" type="text" placeholder="Directory Name" @keyup.enter="renameDirectory" />
+        <p style="color: #e3242b;" class="mt-3" v-if="this.renameDirectoryDialog.hasNameError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> A sub-directory with that name already exists within this directory.</p>
+        <p style="color: #e3242b;" class="mt-3" v-if="this.renameDirectoryDialog.hasInvalidInput"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Please enter a valid name for the directory.</p>
+        <div class="global-dialog-action mt-3">
+            <button class="global-dialog-action-cancel me-2" @click="this.renameDirectoryDialog.show = false">Cancel</button>
+            <button class="global-dialog-action-confirm" @click="renameDirectory" :disabled="this.loading">
+              <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
+              <v-icon icon="mdi-form-textbox" class="my-auto me-2" v-if="!this.loading"></v-icon> Rename Directory
+            </button>
+        </div>
+      </div>
+    </v-dialog>
+    <!-- END Rename Directory Dialog -->
 
     <!-- BEGIN Create File Dialog -->
     <v-dialog
@@ -40,13 +70,15 @@
         >
       <div class="drive-dialog">
         <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Create File</h2>
-        <input v-model="this.createFileDialog.name" class="global-input" type="text" placeholder="File Name" />
+        <input v-model="this.createFileDialog.name" class="global-input" type="text" placeholder="File Name" @keyup.enter="createFile" />
         <p style="color: #e3242b;" class="mt-3" v-if="this.createFileDialog.hasNameError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> A file with that name already exists within this directory.</p>
         <p style="color: #e3242b;" class="mt-3" v-if="this.createFileDialog.hasExtError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> You can only save Java, Python and C files.</p>
         <p style="color: #e3242b;" class="mt-3" v-if="this.createFileDialog.hasInvalidInput"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Please enter a valid name for the file.</p>
         <div class="global-dialog-action mt-3">
             <button class="global-dialog-action-cancel me-2" @click="this.createFileDialog.show = false">Cancel</button>
-            <button class="global-dialog-action-confirm" @click="createFile()"><v-icon icon="mdi-plus-circle-outline" class="my-auto me-2"></v-icon> Create File</button>
+            <button class="global-dialog-action-confirm" @click="createFile" :disabled="this.loading">
+              <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
+              <v-icon icon="mdi-plus-circle-outline" class="my-auto me-2" v-if="!this.loading"></v-icon> Create File</button>
         </div>
       </div>
     </v-dialog>
@@ -61,9 +93,12 @@
             <h2 class="mb-4" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Delete File</h2>
             <p class="m-0" style="font-size: 18px;">Are you sure you want to delete <strong>{{ this.deleteFileDialog.toDelete.name }}</strong>?</p>
             <p class="m-0 mt-2" style="font-size: 18px; color: #e3242b; font-weight: 600;">This action is permanent and cannot be undone.</p>
-            <div class="global-dialog-action mt-4">
+            <div class="global-dialog-action mt-3">
                 <button class="global-dialog-action-cancel me-2" @click="this.deleteFileDialog.show = false">Cancel</button>
-                <button class="global-dialog-action-danger" @click="deleteFile()"><v-icon icon="mdi-delete-empty-outline" class="my-auto me-2"></v-icon> Delete File</button>
+                <button class="global-dialog-action-danger" @click="deleteFile()" :disabled="this.loading">
+                  <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
+                  <v-icon icon="mdi-delete-empty-outline" class="my-auto me-2" v-if="!this.loading"></v-icon> Delete File
+                </button>
             </div>
         </div>
     </v-dialog>
@@ -77,13 +112,13 @@
       <div class="drive-dialog">
         <h2 class="mb-2" style="font-weight: 800; font-size: 25px; margin: 0; padding: 0;">Rename File</h2>
         <p class="m-0" style="font-size: 18px;">Please enter a new name for <strong>{{ this.renameFileDialog.toRename.name }}</strong> (<span style="font-family: monospace">{{ this.renameFileDialog.toRename.fileId }}</span>)</p>
-        <input v-model="this.renameFileDialog.name" :class="{'global-input': true, 'error': (this.renameFileDialog.hasNameError || this.renameFileDialog.hasExtError || this.renameFileDialog.hasInvalidInput), 'mt-4': true}" type="text" placeholder="File Name" />
+        <input v-model="this.renameFileDialog.name" :class="{'global-input': true, 'error': (this.renameFileDialog.hasNameError || this.renameFileDialog.hasExtError || this.renameFileDialog.hasInvalidInput), 'mt-4': true}" type="text" placeholder="File Name" @keyup.enter="renameFile" />
         <p style="color: #e3242b;" class="mt-3" v-if="this.renameFileDialog.hasNameError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> A file with that name already exists within this directory.</p>
         <p style="color: #e3242b;" class="mt-3" v-if="this.renameFileDialog.hasExtError"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> You can only save Java, Python and C files.</p>
         <p style="color: #e3242b;" class="mt-3" v-if="this.renameFileDialog.hasInvalidInput"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Please enter a valid name for the file.</p>
         <div class="global-dialog-action mt-3">
             <button class="global-dialog-action-cancel me-2" @click="this.renameFileDialog.show = false">Cancel</button>
-            <button class="global-dialog-action-confirm" @click="renameFile()" :disabled="this.loading">
+            <button class="global-dialog-action-confirm" @click="renameFile" :disabled="this.loading">
               <v-progress-circular width="2" indeterminate style="width: 20px; height: 20px;" class="mx-auto my-auto me-2" v-if="this.loading"></v-progress-circular>
               <v-icon icon="mdi-form-textbox" class="my-auto me-2" v-if="!this.loading"></v-icon> Rename File
             </button>
@@ -92,7 +127,7 @@
     </v-dialog>
     <!-- END Rename File Dialog -->
   
-    <!-- BEGIN Error Dialog -->
+    <!-- BEGIN Error Message Dialog -->
     <v-dialog
       v-model="errorDialog.show"
       max-width="500"
@@ -105,7 +140,7 @@
             </div>
         </div>
     </v-dialog>
-    <!-- END Error Dialog -->
+    <!-- END Error Message Dialog -->
 
     <!-- BEGIN Progress Indicator -->
     <v-progress-linear color="#379af5" height="3" :indeterminate="this.loading || this.pageLoading"></v-progress-linear>
@@ -589,6 +624,8 @@ export default {
       draggedFolder: null,
       createDirectoryDialog: {
         show: false,
+        hasNameError: false,
+        hasInvalidInput: false,
         name: null
       },
       createFileDialog: {
@@ -602,6 +639,13 @@ export default {
         show: false,
         hasNameError: false,
         hasExtError: false,
+        hasInvalidInput: false,
+        name: null,
+        toRename: null
+      },
+      renameDirectoryDialog: {
+        show: false,
+        hasNameError: false,
         hasInvalidInput: false,
         name: null,
         toRename: null
@@ -652,6 +696,8 @@ export default {
     openCreateDirectoryDialog() {
       this.createDirectoryDialog.name = null;
       this.createDirectoryDialog.show = true;
+      this.createDirectoryDialog.hasNameError = false;
+      this.createDirectoryDialog.hasInvalidInput = false;
     },
     openCreateFileDialog() {
       this.createFileDialog.name = null;
@@ -692,17 +738,18 @@ export default {
       event.currentTarget.querySelector("#folder-icon").classList.remove('mdi-folder-open-outline');
       event.currentTarget.querySelector("#folder-icon").classList.add('mdi-folder-outline');
     },
-    async onDrop(folderId, event) {
+    async onDrop(targetId, event) {
       event.currentTarget.classList.remove('hovered');
       event.currentTarget.querySelector("#folder-icon").classList.remove('mdi-folder-open-outline');
       event.currentTarget.querySelector("#folder-icon").classList.add('mdi-folder-outline');
       if(this.draggedFile != null) {
+        this.loading = true;
         let fileId = this.draggedFile.fileId;
         let response = await this.$store.dispatch('file/updateFile', {
             containerId: this.$route.params.containerId,
             fileId: fileId,
             updates: {
-                folder: folderId
+                folder: targetId
             },
             accessToken: await this.$auth0.getAccessTokenSilently()
         });
@@ -715,9 +762,33 @@ export default {
         } else if(response.status == 409) {
           this.showErrorDialog("A file with the same name already exists in that directory.");
         }
+        this.loading = false;
         this.draggedFile = null;
-      } else if(this.draggedFolder != null && this.draggedFolder.folderId != folderId) {
-        alert("Do you want to move " + this.draggedFolder.name + " into " + folderId + "?");
+      } else if(this.draggedFolder != null && this.draggedFolder.folderId != targetId) {
+        this.loading = true;
+        let folderId = this.draggedFolder.folderId;
+        let response = await this.$store.dispatch('folder/updateFolder', {
+            containerId: this.$route.params.containerId,
+            folderId: folderId,
+            updates: {
+                parent: targetId
+            },
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        if(response.status == 200) {
+          await this.loadDirectory(this.currentDirectory.folderId);
+          const tabs = this.tabs.filter(tab => tab.path.some(path => path.folderId == folderId));
+          tabs.forEach(tab => {
+            const idx = tab.path.findIndex(path => path.folderId == folderId) + 1;
+            tab.path.splice(0, idx);
+            tab.path.splice(0, 0, ...response.data.path);
+            console.log(tab.path);
+          }); 
+        } else if(response.status == 409) {
+          this.showErrorDialog("A directory with the same name already exists in that directory.");
+        }
+        this.loading = false;
+        this.draggedFolder = null;
       } 
     },
     async loadJobs() {
@@ -760,15 +831,27 @@ export default {
     },
     async createDirectory() {
       this.loading = true;
-      await this.$store.dispatch('folder/createFolder', {
-          name: this.createDirectoryDialog.name,
-          folderId: this.currentDirectory.folderId,
-          containerId: this.$route.params.containerId,
-          accessToken: await this.$auth0.getAccessTokenSilently()
-      });
-      await this.loadDirectory(this.currentDirectory.folderId);
+      this.createDirectoryDialog.hasNameError = false;
+      this.createDirectoryDialog.hasInvalidInput = false;
+      if(this.createDirectoryDialog.name != null && this.createDirectoryDialog.name.trim() != "") {
+        let response = await this.$store.dispatch('folder/createFolder', {
+            name: this.createDirectoryDialog.name,
+            folderId: this.currentDirectory.folderId,
+            containerId: this.$route.params.containerId,
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        if(response.status == 201) {
+          await this.loadDirectory(this.currentDirectory.folderId);
+          this.createDirectoryDialog.show = false;
+        } else if(response.status == 409) {
+          this.createDirectoryDialog.hasNameError = true;
+        } else if(response.status == 400) {
+          this.createDirectoryDialog.hasInvalidInput = true;
+        }
+      } else {
+        this.createDirectoryDialog.hasInvalidInput = true;
+      }
       this.loading = false;
-      this.createDirectoryDialog.show = false;
     },
     async createFile() {
       this.loading = true;
@@ -900,6 +983,13 @@ export default {
       this.renameFileDialog.hasExtError = false;
       this.renameFileDialog.hasInvalidInput = false;
     },
+    openRenameDirectoryDialog(folder) {
+      this.renameDirectoryDialog.toRename = folder;
+      this.renameDirectoryDialog.name = null;
+      this.renameDirectoryDialog.show = true;
+      this.renameDirectoryDialog.hasNameError = false;
+      this.renameDirectoryDialog.hasInvalidInput = false;
+    },
     async deleteFile() {
       this.loading = true; 
       let targetId = this.deleteFileDialog.toDelete.fileId;
@@ -936,7 +1026,17 @@ export default {
       if(response == 200) {
         let idx = this.currentDirectory.directories.findIndex(folder => folder.folderId == targetId);
         this.currentDirectory.directories.splice(idx, 1);
+        for(let i = this.tabs.length-1; i>=0; i--) {
+          const tab = this.tabs[i];
+          if(tab.path.some(path => path.folderId == targetId)) {
+            this.tabs.splice(i, 1);
+            if(this.activeTab.fileId == tab.fileId) 
+              this.activeTab = this.tabs.length > 0 ? this.tabs[this.tabs.length-1] : null;
+          }
+        }
         this.reloadDirectorySize();
+      } else if(response == 409) {
+        this.showErrorDialog("Cannot delete this directory since it contains the Entry Point of this container. Please move or assign a new Entry Point before deleting.");
       } else {
         this.showErrorDialog("An unknown error occurred while deleting the directory. Please try again.");
       }
@@ -959,8 +1059,8 @@ export default {
             accessToken: await this.$auth0.getAccessTokenSilently()
         });
         if(response.status == 200) {
-          if(this.tabs.some(tab => tab.fileId == fileId)) {
-            let tab = this.tabs.find(tab => tab.fileId == fileId);
+          let tab = this.tabs.find(tab => tab.fileId == fileId);
+          if (tab != null) {
             tab.name = this.renameFileDialog.name.trim();
             tab.lastModified = response.data.lastModified;
           }
@@ -977,6 +1077,40 @@ export default {
         }
       } else {
         this.renameFileDialog.hasInvalidInput = true;
+      }
+      this.loading = false
+    },
+    async renameDirectory() {
+      this.loading = true;
+      this.renameDirectoryDialog.hasNameError = false;
+      this.renameDirectoryDialog.hasInvalidInput = false;
+      if(this.renameDirectoryDialog.name != null && this.renameDirectoryDialog.name.trim() != "") {
+        let folderId = this.renameDirectoryDialog.toRename.folderId;
+        let response = await this.$store.dispatch('folder/updateFolder', {
+            containerId: this.$route.params.containerId,
+            folderId: folderId,
+            updates: {
+                name: this.renameDirectoryDialog.name.trim()
+            },
+            accessToken: await this.$auth0.getAccessTokenSilently()
+        });
+        if(response.status == 200) {
+          const tabs = this.tabs.filter(tab => tab.path.some(path => path.folderId == folderId));
+          tabs.forEach(tab => {
+            let pathItem = tab.path.find(path => path.folderId == folderId);
+            pathItem.name = this.renameDirectoryDialog.name.trim();
+          });
+          let target = this.currentDirectory.directories.find(folder => folder.folderId == folderId);
+          target.name = this.renameDirectoryDialog.name.trim();
+          target.lastModified = response.data.lastModified;
+          this.renameDirectoryDialog.show = false;
+        } else if(response.status == 409) {
+          this.renameDirectoryDialog.hasNameError = true;
+        } else if(response.status == 400) {
+          this.renameDirectoryDialog.hasInvalidInput = true;
+        }
+      } else {
+        this.renameDirectoryDialog.hasInvalidInput = true;
       }
       this.loading = false
     },

@@ -28,9 +28,21 @@ export default {
                         'Authorization': `Bearer ${data.accessToken}`
                     }
                 });
-                return response.data.folderId;
+                return response;
             } catch(error) {
-                return error.response.status;
+                return error.response;
+            }
+        },
+        async updateFolder({commit}, data) {
+            try {
+                let response = await Api().put(encodeURIComponent(`containers/${data.containerId}/folders/${data.folderId}`), data.updates, {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`
+                    }
+                });
+                return response;
+            } catch(error) {
+                return error.response;
             }
         },
         async deleteFolder({commit}, data) {  
