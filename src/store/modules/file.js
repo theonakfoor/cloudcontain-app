@@ -81,7 +81,22 @@ export default {
             } catch(error) {
                 return error.response.status;
             }
-        }
+        },
+        async searchFiles({commit}, data) {  
+            try {
+                let response = await Api().post(`containers/${data.containerId}/files/search?offset=${data.offset}`, {
+                    query: data.query
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                return response;
+            } catch(error) {
+                return error.response;
+            }
+        },
     },
     getters: {
 

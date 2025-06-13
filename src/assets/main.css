@@ -526,6 +526,10 @@
   cursor: pointer;
 }
 
+.env-sidebar-content-files-create:disabled {
+  color: rgba(0, 0, 0, 0.5);
+}
+
 .env-sidebar-content-files-path {
   display: flex; 
   flex-direction: row; 
