@@ -398,6 +398,8 @@
                                     <v-icon icon="mdi-delete-outline" class="my-auto before-icon" style="font-size: 22px;"></v-icon>
                                     <v-icon icon="mdi-delete-empty-outline" class="my-auto after-icon" style="font-size: 22px;"></v-icon>
                                 </div>
+                                <hr class="my-2" color="#d3d3d3">
+                                <p style="margin: 10px 0px; padding: 0px 20px; font-size: 10px; text-align: center; color: #bfbfbf;">Directory ID &mdash; {{ folder.folderId }}</p>
                             </div>
                         </v-menu>
                       </p>
@@ -627,7 +629,7 @@
                       <!-- BEGIN Output Lines -->
                       <template v-for="output in job.output" v-if="!job.loading">
                         <div class="env-sidebar-job-output">
-                          <div :class="{'me-3': true, 'output-timestamp': true, 'err': (output.level == 'stderr')}">{{ this.moment(Math.floor(output.timestamp / 1e6)).format("h:mm:ss a") }}</div>
+                          <div :class="{'me-3': true, 'output-timestamp': true, 'err': (output.level == 'stderr')}">{{ this.moment(output.timestamp).format("h:mm:ss a") }}</div>
                           <p :class="{'my-auto': true, 'build-output': (output.level == 'build'), 'err-output': (output.level == 'stderr')}" style="margin: 0; font-size: 14px; font-family: monospace;">{{ output.content }}</p>
                         </div>
                       </template>
@@ -1306,7 +1308,7 @@ export default {
           job.timeoutId = setTimeout(() => {
             const latestElement = document.getElementById(`job-output-${data.jobId}`).lastElementChild;
             latestElement.scrollIntoView({ behavior: "smooth", block: "end"});
-          }, 75);
+          }, 50);
         }
       });
       channel.bind('job-queued', (data) => {
