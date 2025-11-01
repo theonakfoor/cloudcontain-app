@@ -52,7 +52,30 @@ export default {
                 }
             });
             return response.data;
-        }
+        },
+         async listRecentContainers({commit}, data) {
+            let response = await Api().get(`containers/recent`, {
+                headers: {
+                    'Authorization': `Bearer ${data.accessToken}`
+                }
+            });
+            return response.data;
+        },
+        async searchContainers({commit}, data) {  
+            try {
+                let response = await Api().post(`containers/search?offset=${data.offset}`, {
+                    query: data.query
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${data.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                return response;
+            } catch(error) {
+                return error.response;
+            }
+        },
     },
     getters: {
 

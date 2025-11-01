@@ -52,7 +52,7 @@ export default {
                         'Authorization': `Bearer ${data.accessToken}`
                     }
                 });
-                return response.status;
+                return response;
             } catch(error) {
                 return error.response.status;
             }

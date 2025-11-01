@@ -65,9 +65,9 @@ export default {
                         'Content-Type': 'text/plain'
                     }
                 });
-                return response.data;
+                return response;
             } catch(error) {
-                return error.response.status;
+                return error.response;
             }
         },
         async deleteFile({commit}, data) {  

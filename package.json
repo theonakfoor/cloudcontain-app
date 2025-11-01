@@ -16,6 +16,7 @@
     "axios": "^1.7.9",
     "moment": "^2.30.1",
     "monaco-editor": "^0.52.2",
+    "tsparticles": "^3.9.1",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0",
     "vuetify": "^3.7.12",

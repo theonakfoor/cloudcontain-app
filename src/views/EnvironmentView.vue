@@ -1,5 +1,83 @@
 <template>
 
+    <!-- BEGIN Settings Dialog -->
+    <v-dialog
+          v-model="settingsDialog.show"
+          max-width="800"
+          max-height="500"
+        >
+      <div class="drive-dialog" style="height: 500px; max-height: 500px; padding: 10px;">
+        <v-row style="height: 100%; margin: 0;">
+
+          <v-col cols="4">
+            <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+              <div>
+                <div>
+                  <div :class="{'env-content-tab': true, 'active': (this.settingsDialog.tab == 0)}" class="mb-3" @click="this.settingsDialog.tab = 0">
+                    General
+                    <v-icon icon="mdi-cog" class="my-auto"></v-icon>
+                  </div>
+                  <div :class="{'env-content-tab': true, 'active': (this.settingsDialog.tab == 1)}" class="mb-3" @click="this.settingsDialog.tab = 1">
+                    Privacy
+                    <v-icon icon="mdi-earth" class="my-auto" v-if="this.envInfo.public"></v-icon>
+                    <v-icon icon="mdi-lock" class="my-auto" v-if="!this.envInfo.public"></v-icon>
+                  </div>
+                </div>
+              </div>
+              <p style="color: #d3d3d3; margin: 0;">Container ID {{ this.envInfo.containerId }}</p>
+            </div>
+          </v-col>
+
+          <v-col cols="8">
+            <div style="max-height: 450px; overflow-y: hidden !important;" v-if="this.settingsDialog.tab == 0">
+              <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: center;" class="mb-2">
+                <h3 style="margin: 0;" class="my-auto"><strong>General Settings</strong></h3>
+                <v-icon icon="mdi-close" class="my-auto" @click="this.settingsDialog.show = false"></v-icon>
+              </div>
+              <hr>
+              <p style="margin: 0;" class="mb-2"><strong>Name & Description</strong></p>
+              <input class="env-content-input mb-2" placeholder="Container name" style="width: 100%;" v-model="this.settingsDialog.name"/>
+              <textarea rows="7" class="env-content-input mb-2" placeholder="Container description" v-model="this.settingsDialog.description" style="width: 100%; resize: none;"></textarea>
+              <button class="env-action light mb-4" @click="updateContainerDetails">Update Details</button>
+          
+              <div style="width: 100%; display: flex; justify-content: space-between;">
+                <p style="margin: 0;" class="mb-2"><strong>Storage</strong></p>
+                <p style="margin: 0;" class="mb-2"><strong>{{ this.formatBytes(this.envInfo.size) }}</strong> of 5MB used</p>
+              </div>
+              <div class="progress mb-4" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="background: rgba(55, 154, 245, 0.2);">
+                <div class="progress-bar" :style="{'width': ((this.envInfo.size / 5_000_000) * 100) + '%', 'background': '#379af5'}"></div>
+              </div>
+            </div>
+            <div style="max-height: 450px; overflow-y: hidden !important;" v-if="this.settingsDialog.tab == 1">
+              <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items: center;" class="mb-2">
+                <h3 style="margin: 0;" class="my-auto"><strong>Privacy Settings</strong></h3>
+                <v-icon icon="mdi-close" class="my-auto" @click="this.settingsDialog.show = false"></v-icon>
+              </div>
+              <hr>
+              <div style="width: 100%; display: flex; flex-direction: row; justify-content: space-between; align-items:start;" class="mb-2">
+                <div style="max-width: 350px;">
+                  <p class="m-0"><strong>Public Container</strong></p>
+                  <p class="m-0">Allow public container visibility. Only the owner will be able to modify container files, directories and details. Public users will be able to execute the project and view outputs.</p>
+                </div>
+                <v-switch
+                  v-model="this.settingsDialog.public"
+                  style="margin: 0 !important;"
+                  color="#00A550"
+                  hide-details
+                  inset
+                  @click="toggleIsPublic"
+                ></v-switch>
+              </div>
+              <button class="env-action light mb-4" v-if="this.envInfo.public"><v-icon icon="mdi-link-variant" class="my-auto me-2"></v-icon> Copy Shareable Link</button>
+              
+            </div>
+          </v-col>
+
+        </v-row>
+      </div>
+    </v-dialog>
+    <!-- END Settings Dialog -->
+
     <!-- BEGIN Create Directory Dialog -->
     <v-dialog
           v-model="createDirectoryDialog.show"
@@ -150,13 +228,12 @@
     <div style="width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center;" v-if="[null, 401, 404, 500].includes(this.envInfo) || this.pageLoading">
       <div style="text-align: center;" v-if="this.envInfo == null || this.pageLoading">
         <v-progress-circular color="#379af5" :size="35" indeterminate></v-progress-circular>
-        <p style="font-weight: 500; font-size: 20px;" class="mt-3 m-0">Loading container...{{  }}</p>
+        <p style="font-weight: 500; font-size: 20px;" class="mt-3 m-0">Loading container...</p>
       </div>
       <div style="text-align: center;" v-if="this.envInfo == 401">
-        <v-icon style="color: #e3242b; font-size: 55px;" icon="mdi-security"></v-icon>
-        <p style="font-weight: 800; font-size: 25px;" class="mt-3 m-0">Oops.</p>
+        <v-icon style="color: #320064; font-size: 55px;" icon="mdi-wizard-hat"></v-icon>
+        <p style="font-weight: 800; font-size: 25px;" class="mt-3 m-0">You shall not pass!</p>
         <p style="font-weight: 400; font-size: 20px;" class="m-0">You don't have access to that container.</p>
-        <center><button class="env-action mt-5"><v-icon icon="mdi-account-plus-outline" class="my-auto me-2"></v-icon> Request Access</button></center>
         <img src="../assets/images/cloudcontain.svg" width="150" class="mt-5" @click="this.home()" />
       </div>
       <div style="text-align: center;" v-if="this.envInfo == 404 || this.envInfo == 500">
@@ -175,15 +252,10 @@
       <!-- END Logo -->
       <!-- BEGIN Environment Details -->
       <div style="display: flex; flex-direction: row;" class="my-auto">
-        <div class="env-name">
+        <div class="env-name" @click="openSettingsDialog()">
           <h4 class="my-auto" style="margin: 0; font-weight: 400; outline: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 200px; font-size: 15px">{{ this.envInfo.name }}</h4>
-          <v-icon icon="mdi-chevron-down" class="ms-1 my-auto" style="color: #bfbfbf"></v-icon>
+          <v-icon icon="mdi-chevron-down" class="ms-1 my-auto" style="color: #bfbfbf" v-if="this.envInfo.owner == this.user.sub"></v-icon>
         </div>
-        <v-tooltip text="Open Hunter" location="bottom">
-          <template v-slot:activator="{ props }">
-            <button class="env-logs ms-2 my-auto" v-bind="props"><v-icon class="mx-auto my-auto" icon="mdi-crosshairs-gps" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></button>
-          </template>
-        </v-tooltip>
         <v-tooltip text="Execute Container" location="bottom">
           <template v-slot:activator="{ props }">
             <button class="env-execute-small ms-2 my-auto" v-bind="props" :disabled="this.loading || this.hasActiveJob()" @click="this.execute()">
@@ -196,38 +268,49 @@
       <!-- END Environment Details -->
       <!-- BEGIN Controls / Account -->
       <div style="display: flex; flex-direction: row;" class="my-auto">
-        <button class="env-action"><v-icon icon="mdi-account-group-outline" class="my-auto me-2"></v-icon> Share</button>
-        <div class="env-avatar ms-2">
-          <v-avatar color="#d3d3d3" size="x-small" class="my-auto" style="font-size: 10px;">
-            TN
-          </v-avatar>
-          <v-icon icon="mdi-chevron-down" class="my-auto ms-1" style="color: #bfbfbf"></v-icon>
-        </div>
+        <button class="env-action" @click="this.settingsDialog.tab = 1; this.settingsDialog.show = true;" v-if="this.envInfo.owner == this.user.sub"><v-icon icon="mdi-account-group-outline" class="my-auto me-2"></v-icon> Share</button>
+        <!-- BEGIN Controls / Account -->
+        <v-tooltip text="Your Account" location="bottom">
+        <template v-slot:activator="{ props: tooltip }">
+            <v-menu location="bottom">
+                <template v-slot:activator="{ props: menu }">
+                    <div class="env-avatar ms-2 my-auto" v-bind="{ ...tooltip, ...menu }">
+                        <v-avatar color="#d3d3d3" size="x-small" class="my-auto" style="font-size: 10px;">
+                            {{ this.user.given_name[0].toUpperCase() }}{{ this.user.family_name[0].toUpperCase() }}
+                        </v-avatar>
+                        <v-icon icon="mdi-chevron-down" class="my-auto ms-1" style="color: #bfbfbf"></v-icon>
+                    </div>
+                </template>
+                <div class="env-tab-menu">
+                    <div style="background: rgba(191, 191, 191, 0.25); border-radius: 5px; display: flex; justify-content: flex-start; padding: 10px; margin: 10px;">
+                        <v-avatar color="#d3d3d3" size="45" class="my-auto me-2" style="font-size: 18px;">
+                        {{ this.user.given_name[0].toUpperCase() }}{{ this.user.family_name[0].toUpperCase() }}
+                        </v-avatar>
+                        <div class="my-auto">
+                            <p style="margin: 0; padding: 0; font-weight: 600;">{{ this.user.given_name }} {{ this.user.family_name }}</p>
+                            <p style="margin: 0; padding: 0; font-size: 12px">{{ this.user.email }}</p>
+                        </div>
+                    </div>
+                    <hr class="my-2" color="#d3d3d3">
+                    <div class="env-menu-option red" @click="this.logout()">
+                        Log Out
+                        <v-icon icon="mdi-logout" class="my-auto" style="font-size: 18px;"></v-icon>
+                    </div>
+                </div>
+            </v-menu>
+        </template>
+        </v-tooltip>
+        <!-- END Controls / Account -->
       </div>
       <!-- END Controls / Account -->
     </div>
     <!-- END Nav Bar -->
 
     <!-- BEGIN Environment Content -->
-    <div class="env-content" v-show="![null, 401, 404, 500].includes(this.envInfo) && !this.pageLoading">
+    <div class="env-content" v-if="![null, 401, 404, 500].includes(this.envInfo) && !this.pageLoading">
 
       <!-- BEGIN Editor -->
       <div class="env-editor" id="editor">
-
-        <!-- BEGIN Empty Display -->
-        <div class="env-editor-empty" v-if="this.tabs.length == 0">
-          <div style="text-align: center;">
-            <v-icon style="color: #bfbfbf; font-size: 55px;" icon="mdi-atom-variant"></v-icon>
-            <p style="font-weight: 800; font-size: 25px;" class="mt-3 m-0">No file selected</p>
-            <p style="font-weight: 400; font-size: 20px;" class="m-0 mb-5">Open or create a file to get started</p>
-            <div style="display: flex; justify-content: center;">
-              <button class="env-action light me-2" @click="this.sidebarTab = 1"><v-icon icon="mdi-folder-file-outline" class="my-auto me-2"></v-icon> Open File</button>
-              <button class="env-action light me-2"><v-icon icon="mdi-file-plus-outline" class="my-auto me-2"></v-icon> Create File</button>
-              <button class="env-action light"><v-icon icon="mdi-cloud-upload" class="my-auto me-2"></v-icon> Upload File</button>
-            </div>
-          </div>
-        </div>
-        <!-- END Empty Display -->
 
         <!-- BEGIN Editor Tabs -->
         <div class="env-editor-tabs" v-if="this.tabs.length > 0">
@@ -246,11 +329,11 @@
               </span>
             </template>
             <div class="env-tab-menu mt-1">
-              <div class="env-menu-option">
+              <div class="env-menu-option" @click="this.sidebarTab = 1; openCreateFileDialog()" v-if="this.envInfo.owner == this.user.sub">
                 Create new file
                 <v-icon icon="mdi-file-plus-outline" class="my-auto" style="color: #bfbfbf; font-size: 18px;"></v-icon>
               </div>
-              <div class="env-menu-option">
+              <div class="env-menu-option" @click="this.sidebarTab = 1;">
                 Open existing file
                 <v-icon icon="mdi-folder-file-outline" class="my-auto" style="color: #bfbfbf; font-size: 18px;"></v-icon>
               </div>
@@ -307,6 +390,20 @@
         </template>
         <!-- END Code Pad-->
 
+        <!-- BEGIN Empty Display -->
+        <div class="env-editor-empty" v-if="this.tabs.length == 0">
+          <div style="text-align: center;">
+            <v-icon style="color: #bfbfbf; font-size: 55px;" icon="mdi-atom-variant"></v-icon>
+            <p style="font-weight: 800; font-size: 25px;" class="mt-3 m-0">No file selected</p>
+            <p style="font-weight: 400; font-size: 20px;" class="m-0 mb-5">Open or create a file to get started</p>
+            <div style="display: flex; justify-content: center;">
+              <button class="env-action light me-2" @click="this.sidebarTab = 1"><v-icon icon="mdi-folder-file-outline" class="my-auto me-2"></v-icon> Open File</button>
+              <button class="env-action light me-2" @click="this.sidebarTab = 1; openCreateFileDialog()" v-if="this.envInfo.owner == this.user.sub"><v-icon icon="mdi-file-plus-outline" class="my-auto me-2"></v-icon> Create File</button>
+            </div>
+          </div>
+        </div>
+        <!-- END Empty Display -->
+
       </div>
       <!-- END Editor -->
 
@@ -339,12 +436,12 @@
                 <input class="env-sidebar-content-files-searchbar" placeholder="Search all files" v-model="this.search.query" @keyup.enter="searchFiles" />
                 <v-tooltip text="Create File" location="bottom">
                   <template v-slot:activator="{ props }">
-                    <button @click="openCreateFileDialog()" :disabled="this.search.results != null" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-file-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></button>
+                    <button @click="openCreateFileDialog()" :disabled="this.search.results != null || this.envInfo.owner != this.user.sub" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-file-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></button>
                   </template>
                 </v-tooltip>
                 <v-tooltip text="Create Directory" location="bottom">
                   <template v-slot:activator="{ props }">
-                    <button @click="openCreateDirectoryDialog()" :disabled="this.search.results != null" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-folder-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></button>
+                    <button @click="openCreateDirectoryDialog()" :disabled="this.search.results != null || this.envInfo.owner != this.user.sub" class="env-sidebar-content-files-create ms-2 my-auto" v-bind="props"><v-icon class="my-auto mx-auto" icon="mdi-folder-plus" style="font-size: 24px; margin: 0; padding: 0;"></v-icon></button>
                   </template>
                 </v-tooltip>
               </div>
@@ -372,7 +469,7 @@
                   <v-col cols="4">
                     <div class="env-sidebar-content-files-directory-wrapper" 
                         @click="openFolder(folder.folderId, $event)" 
-                        :draggable="folder.parent != null"
+                        :draggable="folder.parent != null && this.envInfo.owner == this.user.sub"
                         @dragstart="onDragFolderStart(folder)"
                         @dragend="onDragFolderEnd"
                         @dragover.prevent="onDragOver(folder.folderId, $event)"
@@ -383,7 +480,7 @@
                       </div>
                       <p style="margin: 0; padding: 0; font-size: 15px;">
                         {{ folder.name }}
-                        <v-menu transition="slide-y-transition" v-if="folder.parent != null">
+                        <v-menu transition="slide-y-transition" v-if="folder.parent != null && this.envInfo.owner == this.user.sub">
                             <template v-slot:activator="{ props }">
                                 <v-icon style="font-size: 18px; color: #bfbfbf;" class="my-auto" icon="mdi-dots-vertical" v-bind="props" @click="openOptions"></v-icon>
                             </template>
@@ -418,7 +515,7 @@
               <template v-for="file in this.currentDirectory.files">
                 <div class="env-sidebar-content-files-file mt-2" 
                     @click="(!this.loading) ? openFile(file.fileId) : null" 
-                    draggable="true"
+                    :draggable="this.envInfo.owner != this.user.sub"
                     @dragstart="onDragFileStart(file)"
                     @dragend="onDragFileEnd">
                   <div style="display: flex; flex-direction: row; justify-content: flex-start;">
@@ -436,7 +533,7 @@
                               <strong>{{ file.name }}</strong>
                               <p style="margin: 0; font-family: 'DM Sans'">{{ getFileType(file.name) }} File &mdash; {{ this.formatBytes(file.size) }}</p>
                             </div>
-                            <div class="env-menu-option" @click="openRenameFileDialog(file)">
+                            <div class="env-menu-option" @click="openRenameFileDialog(file)" v-if="this.envInfo.owner == this.user.sub">
                                 Rename file
                                 <v-icon icon="mdi-form-textbox" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
                             </div>
@@ -444,17 +541,17 @@
                                 Copy file path
                                 <v-icon icon="mdi-content-copy" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
                             </div>
-                            <div class="env-menu-option" @click="setEntryPoint(file.fileId)" v-if="!(this.envInfo.entryPoint == file.fileId)">
+                            <div class="env-menu-option" @click="setEntryPoint(file.fileId)" v-if="this.envInfo.entryPoint != file.fileId && this.envInfo.owner == this.user.sub">
                                 Set as Entry Point
                                 <v-icon icon="mdi-location-enter" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
                             </div>
-                            <hr class="my-2" color="#d3d3d3">
-                            <div class="env-menu-option red" @click="openDeleteFileDialog(file)" v-if="!(this.envInfo.entryPoint == file.fileId)">
+                            <hr class="my-2" color="#d3d3d3" v-if="this.envInfo.owner == this.user.sub">
+                            <div class="env-menu-option red" @click="openDeleteFileDialog(file)" v-if="this.envInfo.entryPoint != file.fileId && this.envInfo.owner == this.user.sub">
                                 Delete file 
                                 <v-icon icon="mdi-delete-outline" class="my-auto before-icon" style="font-size: 22px;"></v-icon>
                                 <v-icon icon="mdi-delete-empty-outline" class="my-auto after-icon" style="font-size: 22px;"></v-icon>
                             </div>
-                            <p style="color: rgba(227, 36, 42, 0.6); margin: 10px 0px; padding: 5px 20px;" v-if="(this.envInfo.entryPoint == file.fileId)"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Cannot delete Entry Point</p>
+                            <p style="color: rgba(227, 36, 42, 0.6); margin: 10px 0px; padding: 5px 20px;" v-if="this.envInfo.entryPoint == file.fileId"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Cannot delete Entry Point</p>
                             <hr class="my-2" color="#d3d3d3">
                             <p style="margin: 10px 0px; padding: 0px 20px; font-size: 10px; text-align: center; color: #bfbfbf;">File ID &mdash; {{ file.fileId }}</p>
                         </div>
@@ -503,7 +600,7 @@
                               <strong>{{ file.name }}</strong>
                               <p style="margin: 0; font-family: 'DM Sans'">{{ getFileType(file.name) }} File &mdash; {{ this.formatBytes(file.size) }}</p>
                             </div>
-                            <div class="env-menu-option" @click="openRenameFileDialog(file)">
+                            <div class="env-menu-option" @click="openRenameFileDialog(file)" v-if="this.envInfo.owner == this.user.sub">
                                 Rename file
                                 <v-icon icon="mdi-form-textbox" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
                             </div>
@@ -511,17 +608,17 @@
                                 Copy file path
                                 <v-icon icon="mdi-content-copy" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
                             </div>
-                            <div class="env-menu-option" @click="setEntryPoint(file.fileId)" v-if="!(this.envInfo.entryPoint == file.fileId)">
+                            <div class="env-menu-option" @click="setEntryPoint(file.fileId)" v-if="this.envInfo.entryPoint != file.fileId && this.envInfo.owner == this.user.sub">
                                 Set as Entry Point
                                 <v-icon icon="mdi-location-enter" class="my-auto" style="color: #bfbfbf; font-size: 22px;"></v-icon>
                             </div>
-                            <hr class="my-2" color="#d3d3d3">
-                            <div class="env-menu-option red" @click="openDeleteFileDialog(file)" v-if="!(this.envInfo.entryPoint == file.fileId)">
+                            <hr class="my-2" color="#d3d3d3" v-if="this.envInfo.owner == this.user.sub">
+                            <div class="env-menu-option red" @click="openDeleteFileDialog(file)" v-if="this.envInfo.entryPoint != file.fileId && this.envInfo.owner == this.user.sub">
                                 Delete file 
                                 <v-icon icon="mdi-delete-outline" class="my-auto before-icon" style="font-size: 22px;"></v-icon>
                                 <v-icon icon="mdi-delete-empty-outline" class="my-auto after-icon" style="font-size: 22px;"></v-icon>
                             </div>
-                            <p style="color: rgba(227, 36, 42, 0.6); margin: 10px 0px; padding: 5px 20px;" v-if="(this.envInfo.entryPoint == file.fileId)"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Cannot delete Entry Point</p>
+                            <p style="color: rgba(227, 36, 42, 0.6); margin: 10px 0px; padding: 5px 20px;" v-if="this.envInfo.entryPoint == file.fileId"><v-icon icon="mdi-alert-circle-outline" class="my-auto"></v-icon> Cannot delete Entry Point</p>
                             <hr class="my-2" color="#d3d3d3">
                             <p style="margin: 10px 0px; padding: 0px 20px; font-size: 10px; text-align: center; color: #bfbfbf;">File ID &mdash; {{ file.fileId }}</p>
                         </div>
@@ -654,17 +751,19 @@
             </template>
             <!-- END Jobs List -->
 
+            <!-- BEGIN Sidebar Footer -->
+            <div class="env-sidebar-footer">
+                <img src="../assets/images/cloudcontain-gray.svg" width="100" style="margin: 0; padding: 0;" />
+                <p style="color: #d3d3d3; margin: 0; padding: 0; font-size: 14px;">&copy; {{ new Date().getFullYear() }} cloudcontain.net by <strong>Theo Nakfoor</strong></p> 
+                <a href="/terms" style="font-size: 12px;">Privacy Policy</a> <a href="/terms" style="font-size: 12px;">Terms of Service</a>
+            </div>
+            <!-- END Sidebar Footer -->
+
           </div>
           <!-- END Console Content -->
 
         </div>
         <!-- END Sidebar Tab Content -->
-
-        <!-- BEGIN Sidebar Footer -->
-        <div class="env-sidebar-footer">
-          &copy; {{ new Date().getFullYear() }} cloudcontain.net by <strong>Theo Nakfoor</strong> &bull; <a href="#">Terms of Use</a>
-        </div>
-        <!-- END Sidebar Footer -->
 
       </div>
       <!-- END Sidebar Controls -->
@@ -693,6 +792,10 @@ export default {
       search: {
         query: null,
         results: null,
+      },
+      settingsDialog: {
+        show: false,
+        tab: 0,
       },
       createDirectoryDialog: {
         show: false,
@@ -759,6 +862,9 @@ export default {
       await this.loadJobs();
       await this.loadDirectory("~");
       this.initPusherConnection();
+      this.settingsDialog.name = this.envInfo.name;
+      this.settingsDialog.description = this.envInfo.description;
+      this.settingsDialog.public = this.envInfo.public;
     }
     this.pageLoading = false;
   },
@@ -774,17 +880,27 @@ export default {
       this.errorDialog.show = true;
     },
     openCreateDirectoryDialog() {
-      this.createDirectoryDialog.name = null;
-      this.createDirectoryDialog.show = true;
-      this.createDirectoryDialog.hasNameError = false;
-      this.createDirectoryDialog.hasInvalidInput = false;
+      if(this.envInfo.owner == this.user.sub) {
+        this.createDirectoryDialog.name = null;
+        this.createDirectoryDialog.show = true;
+        this.createDirectoryDialog.hasNameError = false;
+        this.createDirectoryDialog.hasInvalidInput = false;
+      }
     },
     openCreateFileDialog() {
-      this.createFileDialog.name = null;
-      this.createFileDialog.show = true;
-      this.createFileDialog.hasExtError = false;
-      this.createFileDialog.hasNameError = false;
-      this.createFileDialog.hasInvalidInput = false;
+      if(this.envInfo.owner == this.user.sub) {
+        this.createFileDialog.name = null;
+        this.createFileDialog.show = true;
+        this.createFileDialog.hasExtError = false;
+        this.createFileDialog.hasNameError = false;
+        this.createFileDialog.hasInvalidInput = false;
+      }
+    },
+    openSettingsDialog() {
+      if(this.envInfo.owner == this.user.sub) {
+        this.settingsDialog.tab = 0; 
+        this.settingsDialog.show = true;
+      }
     },
     closeTab(fileId, event = null) {
       if(event != null) { event.stopPropagation(); }
@@ -966,8 +1082,9 @@ export default {
         if(response.status == 201) {
           if(response.data.isEntry)
             this.envInfo.entryPoint = response.data.fileId;
-          await this.loadDirectory(this.currentDirectory.folderId);
           this.createFileDialog.show = false;
+          await this.loadDirectory(this.currentDirectory.folderId);
+          await this.openFile(response.data.fileId);
         } else if(response.status == 403) {
           this.createFileDialog.hasExtError = true;
         } else if(response.status == 409) {
@@ -1006,6 +1123,7 @@ export default {
               value: content,
               language: language,
               automaticLayout: true,
+              readOnly: (this.envInfo.owner != this.user.sub),
           });
           tab.pad = editor;
           editor.onKeyUp(async (event) => {
@@ -1031,11 +1149,16 @@ export default {
           content: doc.toString(),
           accessToken: await this.$auth0.getAccessTokenSilently()
       });
-      tab.lastModified = response.lastModified;
-      let target = this.currentDirectory.files.find(file => file.fileId == fileId);
-      if(target != null) {  
-        Object.assign(target, response);
-        this.reloadDirectorySize();
+      if(response.status == 200) {
+        tab.lastModified = response.data.lastModified;
+        let target = this.currentDirectory.files.find(file => file.fileId == fileId);
+        if(target != null) {  
+          Object.assign(target, response.data);
+          this.reloadDirectorySize();
+        }
+        this.envInfo.size += response.data.delta;
+      } else if(response.status == 413) {
+        alert("Error saving file content. The file would exceed the maximum limit of 100KB per file.")
       }
       tab.saving = false;
       this.loading = false;
@@ -1064,27 +1187,35 @@ export default {
       });
     },
     openDeleteFileDialog(file) {
-      this.deleteFileDialog.toDelete = file;
-      this.deleteFileDialog.show = true;
+      if(this.envInfo.owner == this.user.sub) {
+        this.deleteFileDialog.toDelete = file;
+        this.deleteFileDialog.show = true;
+      }
     },
     openDeleteDirectoryDialog(folder) {
-      this.deleteDirectoryDialog.toDelete = folder;
-      this.deleteDirectoryDialog.show = true;
+      if(this.envInfo.owner == this.user.sub) {
+        this.deleteDirectoryDialog.toDelete = folder;
+        this.deleteDirectoryDialog.show = true;
+      }
     },
     openRenameFileDialog(file) {
-      this.renameFileDialog.toRename = file;
-      this.renameFileDialog.name = null;
-      this.renameFileDialog.show = true;
-      this.renameFileDialog.hasNameError = false;
-      this.renameFileDialog.hasExtError = false;
-      this.renameFileDialog.hasInvalidInput = false;
+      if(this.envInfo.owner == this.user.sub) {
+        this.renameFileDialog.toRename = file;
+        this.renameFileDialog.name = null;
+        this.renameFileDialog.show = true;
+        this.renameFileDialog.hasNameError = false;
+        this.renameFileDialog.hasExtError = false;
+        this.renameFileDialog.hasInvalidInput = false;
+      }
     },
     openRenameDirectoryDialog(folder) {
-      this.renameDirectoryDialog.toRename = folder;
-      this.renameDirectoryDialog.name = null;
-      this.renameDirectoryDialog.show = true;
-      this.renameDirectoryDialog.hasNameError = false;
-      this.renameDirectoryDialog.hasInvalidInput = false;
+      if(this.envInfo.owner == this.user.sub) {
+        this.renameDirectoryDialog.toRename = folder;
+        this.renameDirectoryDialog.name = null;
+        this.renameDirectoryDialog.show = true;
+        this.renameDirectoryDialog.hasNameError = false;
+        this.renameDirectoryDialog.hasInvalidInput = false;
+      }
     },
     async deleteFile() {
       this.loading = true; 
@@ -1094,7 +1225,7 @@ export default {
           fileId: targetId,
           accessToken: await this.$auth0.getAccessTokenSilently()
       });
-      if(response == 200) {
+      if(response == 204) {
         let tabIdx = this.tabs.findIndex(tab => tab.fileId == targetId);
         if (tabIdx != -1) {
           this.tabs.splice(tabIdx, 1);
@@ -1109,6 +1240,7 @@ export default {
           }
         }
         let idx = this.currentDirectory.files.findIndex(file => file.fileId == targetId);
+        this.envInfo.size -= this.currentDirectory.files[idx].size;
         this.currentDirectory.files.splice(idx, 1);
         this.reloadDirectorySize();
       } else {
@@ -1125,7 +1257,7 @@ export default {
           folderId: targetId,
           accessToken: await this.$auth0.getAccessTokenSilently()
       });
-      if(response == 200) {
+      if(response.status == 200) {
         let idx = this.currentDirectory.directories.findIndex(folder => folder.folderId == targetId);
         this.currentDirectory.directories.splice(idx, 1);
         for(let i = this.tabs.length-1; i>=0; i--) {
@@ -1136,8 +1268,9 @@ export default {
               this.activeTab = this.tabs.length > 0 ? this.tabs[this.tabs.length-1] : null;
           }
         }
+        this.envInfo.size -= response.data.delta;
         this.reloadDirectorySize();
-      } else if(response == 409) {
+      } else if(response.status == 409) {
         this.showErrorDialog("Cannot delete this directory since it contains the Entry Point of this container. Please move or assign a new Entry Point before deleting.");
       } else {
         this.showErrorDialog("An unknown error occurred while deleting the directory. Please try again.");
@@ -1166,10 +1299,12 @@ export default {
             tab.name = this.renameFileDialog.name.trim();
             tab.lastModified = response.data.lastModified;
           }
-          let searchResult = this.search.results.files.find(result => result.fileId == fileId);
-          if (searchResult != null) {
-            searchResult.name = this.renameFileDialog.name.trim();
-            searchResult.lastModified = response.data.lastModified;
+          if(this.search.results != null) {
+            let searchResult = this.search.results.files.find(result => result.fileId == fileId);
+            if (searchResult != null) {
+              searchResult.name = this.renameFileDialog.name.trim();
+              searchResult.lastModified = response.data.lastModified;
+            }
           }
           let target = this.currentDirectory.files.find(file => file.fileId == fileId);
           target.name = this.renameFileDialog.name.trim();
@@ -1355,6 +1490,36 @@ export default {
     },
     home() {
       window.open(`/drive`, "_self");
+    },
+    async updateContainerDetails() {
+      this.loading = true;
+      let response = await this.$store.dispatch('container/updateContainer', {
+          containerId: this.$route.params.containerId,
+          updates: {
+              name: this.settingsDialog.name,
+              description: this.settingsDialog.description
+          },
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      if (response == 204) {
+        this.envInfo.name = this.settingsDialog.name;
+        this.envInfo.description = this.settingsDialog.description;
+      } 
+      this.loading = false;
+    },
+    async toggleIsPublic() {
+      this.loading = true;
+      let response = await this.$store.dispatch('container/updateContainer', {
+          containerId: this.$route.params.containerId,
+          updates: {
+              public: !this.settingsDialog.public,
+          },
+          accessToken: await this.$auth0.getAccessTokenSilently()
+      });
+      if (response == 204) {
+        this.envInfo.public = this.settingsDialog.public;
+      }
+      this.loading = false;
     }
   }
 }

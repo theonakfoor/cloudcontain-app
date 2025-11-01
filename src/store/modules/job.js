@@ -38,7 +38,15 @@ export default {
                 }
             });
             return response.data;
-        }
+        },
+        async listRecentJobs({commit}, data) {
+            let response = await Api().get(`jobs`, {
+                headers: {
+                    'Authorization': `Bearer ${data.accessToken}`
+                }
+            });
+            return response.data;
+        },
     },
     getters: {
 
