@@ -92,7 +92,7 @@
 
         <div class="drive-sidebar">
             <div>
-                <button class="drive-create-new" @click="this.openCreateContainerDialog()" :disabled="!this.loading && this.userInfo.containers >= 3"><v-icon icon="mdi-plus" class="my-auto me-2"></v-icon>Create Container</button> 
+                <button class="drive-create-new" @click="this.openCreateContainerDialog()" :disabled="!this.loading && this.userInfo != null && this.userInfo.containers >= 3"><v-icon icon="mdi-plus" class="my-auto me-2"></v-icon>Create Container</button> 
             
                 <div :class="{'drive-content-sidebar-option': true, 'active': (this.tab == 0), 'mt-4': true}" @click="this.tab = 0">
                     Home
@@ -102,13 +102,13 @@
                 <v-skeleton-loader type="list-item-two-line" v-if="this.loading"></v-skeleton-loader>
 
                 <div class="mt-4" style="width: 100%; display: flex; justify-content: center;" v-if="!this.loading">
-                    <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo.containers >= 1)}"></div>
-                    <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo.containers >= 2)}"></div>
-                    <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo.containers >= 3)}" style="margin-right: 0 !important;"></div>
+                    <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo != null && this.userInfo.containers >= 1)}"></div>
+                    <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo != null && this.userInfo.containers >= 2)}"></div>
+                    <div :class="{'drive-container-usage-indicator': true, 'active': (this.userInfo != null && this.userInfo.containers >= 3)}" style="margin-right: 0 !important;"></div>
                 </div>
 
                 <div class="mt-2" style="width: 100%; text-align: center;" v-if="!this.loading">
-                    <p style="color: #bfbfbf">{{ this.userInfo.containers }} of 3 <strong>Free</strong> Containers used</p>
+                    <p style="color: #bfbfbf">{{ (this.userInfo != null) ? this.userInfo.containers : 0 }} of 3 <strong>Free</strong> Containers used</p>
                 </div>
             </div>
             <div>
@@ -352,7 +352,11 @@ export default {
                 toDelete: null
             },
             logout: () => {
-                logout();
+                logout({
+                    logoutParams: {
+                        returnTo: window.location.origin
+                    }
+                });
             },
             user,
             userInfo: null,

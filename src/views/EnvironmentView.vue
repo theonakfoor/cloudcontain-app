@@ -846,7 +846,11 @@ export default {
         "c": "c"
       },
       logout: () => {
-          logout();
+        logout({
+            logoutParams: {
+                returnTo: window.location.origin
+            }
+        });
       },
       user,
       isAuthenticated
