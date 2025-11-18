@@ -4,13 +4,14 @@ import containerModule from './modules/container'
 import userModule from './modules/user'
 import folderModule from './modules/folder'
 import fileModule from './modules/file'
-import file from './modules/file'
+import jobModule from './modules/job'
 
 export default createStore({
     modules: {
         container: containerModule,
         folder: folderModule,
         file: fileModule,
+        job: jobModule,
         user: userModule
     },
     state: {
