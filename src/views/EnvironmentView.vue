@@ -515,7 +515,7 @@
               <template v-for="file in this.currentDirectory.files">
                 <div class="env-sidebar-content-files-file mt-2" 
                     @click="(!this.loading) ? openFile(file.fileId) : null" 
-                    :draggable="this.envInfo.owner != this.user.sub"
+                    :draggable="this.envInfo.owner == this.user.sub"
                     @dragstart="onDragFileStart(file)"
                     @dragend="onDragFileEnd">
                   <div style="display: flex; flex-direction: row; justify-content: flex-start;">

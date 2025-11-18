@@ -29,5 +29,8 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+<<<<<<< Updated upstream
 *.zip
+=======
+>>>>>>> Stashed changes
 dist.zip
